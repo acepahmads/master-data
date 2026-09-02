@@ -155,14 +155,14 @@ func (r *ImportRepository) GetStagedRows(batchID string, status string, decision
 	}
 	offset := (page - 1) * limit
 
-	err := query.Order("row_number ASC").Offset(offset).Limit(limit).Find(&rows).Error
+	err := query.Order("`row_number` ASC").Offset(offset).Limit(limit).Find(&rows).Error
 	return rows, total, err
 }
 
 // GetAllStagedRowsInBatch returns all staged rows for batch-level processing.
 func (r *ImportRepository) GetAllStagedRowsInBatch(batchID string) ([]model.ImportStagedRow, error) {
 	var rows []model.ImportStagedRow
-	err := r.db.Where("batch_id = ?", batchID).Order("row_number ASC").Find(&rows).Error
+	err := r.db.Where("batch_id = ?", batchID).Order("`row_number` ASC").Find(&rows).Error
 	return rows, err
 }
 
@@ -196,7 +196,7 @@ func (r *ImportRepository) BulkUpdateRows(rows []model.ImportStagedRow) error {
 // GetApprovedRowsByBatch returns all approved rows ready for atomic master dispatch.
 func (r *ImportRepository) GetApprovedRowsByBatch(batchID string) ([]model.ImportStagedRow, error) {
 	var rows []model.ImportStagedRow
-	err := r.db.Where("batch_id = ? AND review_decision = ?", batchID, model.RowDecisionApproved).Order("row_number ASC").Find(&rows).Error
+	err := r.db.Where("batch_id = ? AND review_decision = ?", batchID, model.RowDecisionApproved).Order("`row_number` ASC").Find(&rows).Error
 	return rows, err
 }
 

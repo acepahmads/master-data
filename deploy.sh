@@ -19,7 +19,7 @@ echo -e "${BLUE}======================================================${NC}"
 
 # 1. Pull Latest Code from Git
 echo -e "\n${YELLOW}[1/4] Pulling latest code from Git repository...${NC}"
-git pull origin main
+git pull
 
 # 2. Build Frontend
 echo -e "\n${YELLOW}[2/4] Installing dependencies & Building Frontend (Vue + Vite)...${NC}"
