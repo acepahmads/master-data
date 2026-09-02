@@ -1,0 +1,24 @@
+{
+  "name": "iot-rd-control-center",
+  "private": true,
+  "version": "1.0.0",
+  "description": "IoT Product R&D Control Center - Product, Component & Engineering Master Data Management (Phase 1)",
+  "scripts": {
+    "dev": "node ./node_modules/vite/bin/vite.js",
+    "build": "node ./node_modules/vite/bin/vite.js build",
+    "preview": "node ./node_modules/vite/bin/vite.js preview"
+  },
+  "dependencies": {
+    "axios": "^1.20.0",
+    "pinia": "^2.1.7",
+    "vue": "^2.7.16",
+    "vue-router": "^3.5.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue2": "^2.3.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.3.1"
+  }
+}
