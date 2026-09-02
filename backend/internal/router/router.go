@@ -2,6 +2,9 @@ package router
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"iot-rd-backend/internal/config"
 	"iot-rd-backend/internal/handler"
@@ -393,6 +396,49 @@ func SetupRouter(deps *RouterDependencies) *gin.Engine {
 				apiTokens.DELETE("/:id", deps.APITokenHandler.Revoke)
 			}
 		}
+	}
+
+	// Option 3: Direct Dist Serving & SPA Fallback (Single Server / Port 8080)
+	distDir := "./dist"
+	if _, err := os.Stat(distDir); os.IsNotExist(err) {
+		if _, err2 := os.Stat("../dist"); err2 == nil {
+			distDir = "../dist"
+		}
+	}
+
+	if info, err := os.Stat(distDir); err == nil && info.IsDir() {
+		// Serve assets subfolder
+		assetsDir := filepath.Join(distDir, "assets")
+		if _, err := os.Stat(assetsDir); err == nil {
+			r.Static("/assets", assetsDir)
+		}
+
+		// Fallback SPA routing to dist/index.html for all non-API GET requests
+		r.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+
+			// Never intercept API or uploads routes with HTML
+			if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/uploads") {
+				c.JSON(http.StatusNotFound, gin.H{"error": "API endpoint not found"})
+				return
+			}
+
+			// Check if static file directly exists in dist root (e.g., favicon.ico, logo.png)
+			targetFile := filepath.Join(distDir, filepath.Clean(path))
+			if fileInfo, err := os.Stat(targetFile); err == nil && !fileInfo.IsDir() {
+				c.File(targetFile)
+				return
+			}
+
+			// Fallback to index.html for Vue SPA Router (history/hash mode)
+			indexPath := filepath.Join(distDir, "index.html")
+			if _, err := os.Stat(indexPath); err == nil {
+				c.File(indexPath)
+				return
+			}
+
+			c.JSON(http.StatusNotFound, gin.H{"error": "Page not found and dist/index.html missing"})
+		})
 	}
 
 	return r
