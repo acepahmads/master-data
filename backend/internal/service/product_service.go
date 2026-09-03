@@ -170,7 +170,7 @@ func (s *ProductService) PopulatePriceSummaries(prod *model.Product) {
 			}
 		}
 
-	case model.ProductTypeRND:
+	case model.ProductTypeManufacture, "RND", "R&D":
 		if s.bomService != nil {
 			rndCost, err := s.bomService.GetProductCostSummary(prod.ID)
 			if err == nil && rndCost != nil && rndCost.EstimatedBOMCost > 0 {
@@ -397,10 +397,10 @@ func (s *ProductService) Update(id string, p *model.Product, currentUser *model.
 	newType := normalizeProductType(p.ProductType)
 	if newType != "" && newType != existing.ProductType {
 		// Type Conversion Safety Rules
-		if existing.ProductType == model.ProductTypeRND && s.versionRepo != nil {
+		if (existing.ProductType == model.ProductTypeManufacture || existing.ProductType == "RND") && s.versionRepo != nil {
 			versions, _ := s.versionRepo.FindByProduct(existing.ID)
 			if len(versions) > 0 {
-				return nil, fmt.Errorf("cannot convert product type from R&D to %s: product has %d existing engineering versions and hardware revisions", newType, len(versions))
+				return nil, fmt.Errorf("cannot convert product type from Manufacture to %s: product has %d existing engineering versions and hardware revisions", newType, len(versions))
 			}
 		}
 		if existing.ProductType == model.ProductTypeProject && s.projectItemRepo != nil {
@@ -587,9 +587,9 @@ func normalizeProductType(t string) string {
 		return model.ProductTypeTrading
 	case "PROJECT", "SOLUTION", "SYSTEM":
 		return model.ProductTypeProject
-	case "RND", "R&D", "ENGINEERING":
-		return model.ProductTypeRND
+	case "MANUFACTURE", "MANUFACTURING", "MANUFACTURED", "RND", "R&D", "ENGINEERING":
+		return model.ProductTypeManufacture
 	default:
-		return model.ProductTypeRND
+		return model.ProductTypeManufacture
 	}
 }

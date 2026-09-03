@@ -34,12 +34,12 @@
 
         <!-- 3 Product Type Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <!-- CARD 1: R&D PRODUCT -->
+          <!-- CARD 1: MANUFACTURE PRODUCT -->
           <div
-            @click="setProductType('RND')"
+            @click="setProductType('MANUFACTURE')"
             :class="[
               'p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between select-none relative overflow-hidden',
-              form.productType === 'RND'
+              form.productType === 'MANUFACTURE' || form.productType === 'RND'
                 ? 'border-emerald-500 bg-emerald-50/40 shadow-xs'
                 : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
             ]"
@@ -49,11 +49,11 @@
                 <div class="w-8 h-8 rounded-lg bg-emerald-100/80 text-emerald-700 flex items-center justify-center font-bold">
                   <AppIcon name="cpu" size="xs" />
                 </div>
-                <span v-if="form.productType === 'RND'" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span v-if="form.productType === 'MANUFACTURE' || form.productType === 'RND'" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
               </div>
-              <h3 class="font-bold text-xs text-slate-900">R&D PRODUCT</h3>
+              <h3 class="font-bold text-xs text-slate-900">MANUFACTURE PRODUCT</h3>
               <p class="text-3xs text-slate-500 mt-1 leading-relaxed">
-                Internally developed engineering hardware with full lifecycle versioning.
+                Internally manufactured engineering hardware with full lifecycle versioning.
               </p>
             </div>
 
@@ -134,10 +134,10 @@
                 <span>✓</span> <span>System Architecture Tree</span>
               </div>
               <div class="text-cyan-700 font-medium flex items-center gap-1">
-                <span>✓</span> <span>References Trading & R&D</span>
+                <span>✓</span> <span>References Trading & Manufacture</span>
               </div>
               <div class="text-slate-400 flex items-center gap-1">
-                <span>✕</span> <span>No Internal R&D BOM Duplication</span>
+                <span>✕</span> <span>No Internal Manufacture BOM Duplication</span>
               </div>
             </div>
           </div>
@@ -624,8 +624,8 @@
         </div>
       </div>
 
-      <!-- B: IF R&D PRODUCT -> ELECTRICAL & MECHANICAL SPECIFICATIONS -->
-      <div v-else-if="form.productType === 'RND'" class="bg-white rounded-lg border border-slate-200 shadow-card p-5">
+      <!-- B: IF MANUFACTURE PRODUCT -> ELECTRICAL & MECHANICAL SPECIFICATIONS -->
+      <div v-else-if="form.productType === 'MANUFACTURE' || form.productType === 'RND'" class="bg-white rounded-lg border border-slate-200 shadow-card p-5">
         <div class="flex items-center gap-2 pb-3 border-b border-slate-200 mb-4">
           <AppIcon name="cpu" size="sm" class="text-brand-600" />
           <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800">Hardware & Environmental Baseline</h2>
@@ -717,7 +717,7 @@ export default {
         id: null,
         code: '',
         name: '',
-        productType: 'RND',
+        productType: 'MANUFACTURE',
         category: 'Sensors & Nodes',
         status: 'Active',
         projectLead: '',

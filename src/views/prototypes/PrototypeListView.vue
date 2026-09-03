@@ -48,7 +48,7 @@
         <!-- Product Filter -->
         <div>
           <select v-model="selectedProduct" class="form-select text-xs w-full">
-            <option value="">All R&D Products</option>
+            <option value="">All Manufacture Products</option>
             <option v-for="prod in uniqueProducts" :key="prod.code" :value="prod.code">
               {{ prod.code }} — {{ prod.name }}
             </option>

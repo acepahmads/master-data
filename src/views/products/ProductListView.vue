@@ -41,18 +41,18 @@
       </button>
 
       <button
-        @click="selectedProductType = 'RND'"
+        @click="selectedProductType = 'MANUFACTURE'"
         :class="[
           'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2',
-          selectedProductType === 'RND'
+          selectedProductType === 'MANUFACTURE'
             ? 'bg-emerald-600 text-white shadow-2xs'
             : 'bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200'
         ]"
       >
         <AppIcon name="cpu" size="xs" />
-        <span>R&D Products</span>
-        <span class="text-3xs font-mono px-1.5 py-0.2 rounded-full" :class="selectedProductType === 'RND' ? 'bg-emerald-700 text-emerald-100' : 'bg-emerald-50 text-emerald-700'">
-          {{ rndCount }}
+        <span>Manufacture Products</span>
+        <span class="text-3xs font-mono px-1.5 py-0.2 rounded-full" :class="selectedProductType === 'MANUFACTURE' ? 'bg-emerald-700 text-emerald-100' : 'bg-emerald-50 text-emerald-700'">
+          {{ manufactureCount }}
         </span>
       </button>
 
@@ -245,7 +245,7 @@
                   ]"
                 >
                   <AppIcon :name="p.productType === 'TRADING' ? 'shopping-bag' : p.productType === 'PROJECT' ? 'layers' : 'cpu'" size="xs" />
-                  <span>{{ p.productType || 'RND' }}</span>
+                  <span>{{ (p.productType === 'RND' ? 'MANUFACTURE' : p.productType) || 'MANUFACTURE' }}</span>
                 </span>
               </td>
               <td class="py-2 px-2.5 whitespace-nowrap">
@@ -561,8 +561,11 @@ export default {
     isSuperAdmin() {
       return this.store.isSuperAdmin;
     },
+    manufactureCount() {
+      return this.store.products.filter(p => p.productType === 'MANUFACTURE' || p.productType === 'RND' || !p.productType).length;
+    },
     rndCount() {
-      return this.store.products.filter(p => p.productType === 'RND' || !p.productType).length;
+      return this.manufactureCount;
     },
     trdCount() {
       return this.store.products.filter(p => p.productType === 'TRADING').length;
@@ -583,7 +586,8 @@ export default {
         const matchesSearch = !q || (p.name && p.name.toLowerCase().includes(q)) || (p.code && p.code.toLowerCase().includes(q)) || (p.projectLead && p.projectLead.toLowerCase().includes(q));
         const matchesCategory = !this.selectedCategory || p.category === this.selectedCategory;
         const matchesStatus = !this.selectedStatus || p.status === this.selectedStatus;
-        const pType = p.productType || 'RND';
+        let pType = p.productType || 'MANUFACTURE';
+        if (pType === 'RND') pType = 'MANUFACTURE';
         const matchesType = !this.selectedProductType || pType === this.selectedProductType;
         return matchesSearch && matchesCategory && matchesStatus && matchesType;
       });

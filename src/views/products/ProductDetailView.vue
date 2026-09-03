@@ -31,7 +31,7 @@
                 ]"
               >
                 <AppIcon :name="product.productType === 'TRADING' ? 'shopping-bag' : product.productType === 'PROJECT' ? 'layers' : 'cpu'" size="xs" />
-                <span>{{ product.productType || 'RND' }} PRODUCT</span>
+                <span>{{ (product.productType === 'RND' ? 'MANUFACTURE' : product.productType) || 'MANUFACTURE' }} PRODUCT</span>
               </span>
               <span class="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                 {{ product.category }}
@@ -49,9 +49,9 @@
             <span>Edit Master</span>
           </router-link>
 
-          <!-- NEW VERSION BUTTON: STRICTLY FOR R&D PRODUCTS ONLY -->
+          <!-- NEW VERSION BUTTON: STRICTLY FOR MANUFACTURE PRODUCTS ONLY -->
           <router-link
-            v-if="isRND"
+            v-if="isManufacture"
             :to="`/versions/create?product=${product.code}`"
             class="btn btn-secondary"
           >
@@ -120,9 +120,9 @@
           </span>
         </button>
 
-        <!-- Dynamic Tab for R&D PRODUCTS -->
+        <!-- Dynamic Tab for MANUFACTURE PRODUCTS -->
         <button
-          v-if="isRND"
+          v-if="isManufacture"
           @click="activeTab = 'lifecycle'"
           :class="[
             'pb-2 font-semibold border-b-2 transition-all flex items-center gap-1.5',
@@ -167,7 +167,7 @@
                     'bg-emerald-50 text-emerald-700 border-emerald-200'
                   ]"
                 >
-                  {{ product.productType || 'RND' }} PRODUCT
+                  {{ (product.productType === 'RND' ? 'MANUFACTURE' : product.productType) || 'MANUFACTURE' }} PRODUCT
                 </span>
               </div>
             </div>
@@ -211,8 +211,8 @@
           </div>
         </div>
 
-        <!-- HARDWARE & COMPLIANCE (FOR R&D) -->
-        <div v-if="isRND" class="app-card p-5 bg-white">
+        <!-- HARDWARE & COMPLIANCE (FOR MANUFACTURE) -->
+        <div v-if="isManufacture" class="app-card p-5 bg-white">
           <div class="flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
             <AppIcon name="shield-check" size="xs" class="text-brand-600" />
             <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800">Hardware Characteristics & Compliance</h2>
@@ -367,10 +367,10 @@
             </button>
           </div>
 
-          <!-- R&D ENGINEERING BOM COST CARD -->
+          <!-- MANUFACTURE ENGINEERING BOM COST CARD -->
           <div v-else class="space-y-3 text-xs">
             <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-              <div class="font-bold text-emerald-900">Internal R&D Engineering</div>
+              <div class="font-bold text-emerald-900">Internal Manufacturing Engineering</div>
               <p class="text-3xs text-emerald-700 mt-1 leading-relaxed">
                 Hardware revisions track multi-level engineering BOMs with live component line cost rollups.
               </p>
@@ -424,8 +424,8 @@
       <ProjectStructureWorkspace :productId="product.id || product.code" />
     </div>
 
-    <!-- TAB 4: R&D LIFECYCLE & VERSIONS (FOR R&D) -->
-    <div v-else-if="activeTab === 'lifecycle' && isRND" class="space-y-5">
+    <!-- TAB 4: MANUFACTURE LIFECYCLE & VERSIONS (FOR MANUFACTURE) -->
+    <div v-else-if="activeTab === 'lifecycle' && isManufacture" class="space-y-5">
       <LifecycleTree :productCode="product.code" />
     </div>
 
@@ -527,8 +527,11 @@ export default {
     isProject() {
       return this.productType === 'PROJECT';
     },
+    isManufacture() {
+      return this.productType === 'MANUFACTURE' || this.productType === 'RND';
+    },
     isRND() {
-      return this.productType === 'RND';
+      return this.isManufacture;
     },
     productVersions() {
       if (!this.product) return [];
@@ -592,7 +595,7 @@ export default {
         this.activeTab = 'master';
       } else if (this.activeTab === 'commercial' && !this.isTrading) {
         this.activeTab = 'master';
-      } else if (this.activeTab === 'lifecycle' && !this.isRND) {
+      } else if (this.activeTab === 'lifecycle' && !this.isManufacture) {
         this.activeTab = 'master';
       }
 
@@ -632,7 +635,7 @@ export default {
         this.activeTab = 'master';
       } else if (this.activeTab === 'commercial' && !this.isTrading) {
         this.activeTab = 'master';
-      } else if (this.activeTab === 'lifecycle' && !this.isRND) {
+      } else if (this.activeTab === 'lifecycle' && !this.isManufacture) {
         this.activeTab = 'master';
       }
     }

@@ -81,8 +81,8 @@ func (s *BOMService) CreateBOM(revisionID string, bom *model.EngineeringBOM, cur
 	if err != nil {
 		return nil, errors.New("associated product master not found")
 	}
-	if prod.ProductType != "" && prod.ProductType != model.ProductTypeRND {
-		return nil, fmt.Errorf("cannot create engineering BOM: product '%s' is of type %s (BOM management is strictly restricted to R&D Products)", prod.Code, prod.ProductType)
+	if prod.ProductType != "" && prod.ProductType != model.ProductTypeManufacture && prod.ProductType != "RND" {
+		return nil, fmt.Errorf("cannot create engineering BOM: product '%s' is of type %s (BOM management is strictly restricted to Manufacture Products)", prod.Code, prod.ProductType)
 	}
 
 	// 4. Check if BOM already exists for this revision
@@ -439,7 +439,7 @@ func (s *BOMService) GetProductCostSummary(productID string) (*model.ProductCost
 		Currency:    "USD",
 	}
 
-	if prod.ProductType != model.ProductTypeRND {
+	if prod.ProductType != model.ProductTypeManufacture && prod.ProductType != "RND" {
 		return summary, nil
 	}
 
@@ -542,7 +542,7 @@ func (s *BOMService) computeProjectItemCost(item *model.ProjectItem) float64 {
 			if detail != nil {
 				return math.Round((item.Quantity*detail.PurchasePrice)*100) / 100
 			}
-		} else if refProd.ProductType == model.ProductTypeRND {
+		} else if refProd.ProductType == model.ProductTypeManufacture || refProd.ProductType == "RND" {
 			costSum, _ := s.GetProductCostSummary(refProd.ID)
 			if costSum != nil && costSum.EstimatedBOMCost > 0 {
 				return math.Round((item.Quantity*costSum.EstimatedBOMCost)*100) / 100

@@ -594,15 +594,18 @@ func (s *ImportService) determineStreamPrefix(batch *model.ImportBatch, row *mod
 		return "TRD"
 	}
 
-	// 3. If source is detected as RnD / Development:
-	isRnD := strings.Contains(combined, "DEV") ||
+	// 3. If source is detected as Manufacture / RnD / Development:
+	isManufacture := strings.Contains(combined, "DEV") ||
 		strings.Contains(combined, "RND") ||
 		strings.Contains(combined, "R&D") ||
+		strings.Contains(combined, "MANUFACTURE") ||
+		strings.Contains(combined, "MFG") ||
 		strings.Contains(combined, "PROTOTYPE") ||
 		strings.Contains(combined, "INTERNAL") ||
+		row.ProductType == "MANUFACTURE" ||
 		row.ProductType == "RND"
 
-	if isRnD {
+	if isManufacture {
 		return "DEV"
 	}
 
@@ -698,7 +701,7 @@ func isStopWord(w string) bool {
 		"QUOTATION": true, "PENGAJUAN": true, "JASA": true, "SERVICE": true,
 		"CBI": true, "IOT": true, "UNIT": true, "AREA": true, "ITEM": true,
 		"R1": true, "R2": true, "V1": true, "V2": true, "V3": true, "THE": true, "AND": true, "FOR": true,
-		"DEV": true, "TRD": true, "PROJ": true, "PRJ": true, "RND": true, "INTERNAL": true,
+		"DEV": true, "TRD": true, "PROJ": true, "PRJ": true, "RND": true, "INTERNAL": true, "MFG": true, "MANUFACTURE": true,
 		"EDGE": true, "GATEWAY": true, "BOARD": true, "HARDWARE": true, "SOFTWARE": true,
 		"SYSTEM": true, "MODULE": true, "CONTROLLER": true, "SENSOR": true,
 	}

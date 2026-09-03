@@ -59,18 +59,18 @@
       <!-- STEP 1: SELECT R&D PRODUCT, VERSION, HARDWARE REVISION -->
       <div v-if="currentStep === 1" class="space-y-4">
         <div class="pb-3 border-b border-slate-100">
-          <h2 class="text-sm font-bold text-slate-900">Step 1: Select R&D Engineering Baseline</h2>
+          <h2 class="text-sm font-bold text-slate-900">Step 1: Select Manufacture Engineering Baseline</h2>
           <p class="text-xs text-slate-500 mt-0.5">
-            Select the R&D Product, Product Version, and approved Hardware Revision to instantiate this prototype build.
+            Select the Manufacture Product, Product Version, and approved Hardware Revision to instantiate this prototype build.
           </p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <!-- Product Selector -->
           <div>
-            <label class="form-label">1. R&D Product <span class="text-red-500">*</span></label>
+            <label class="form-label">1. Manufacture Product <span class="text-red-500">*</span></label>
             <select v-model="form.productId" @change="onProductChange" class="form-select w-full">
-              <option value="">Select R&D Product</option>
+              <option value="">Select Manufacture Product</option>
               <option v-for="prod in rndProducts" :key="prod.id" :value="prod.id">
                 {{ prod.code }} — {{ prod.name }}
               </option>
@@ -381,7 +381,7 @@ export default {
       return useVersionStore();
     },
     rndProducts() {
-      return this.masterStore.products.filter(p => p.productType === 'RND' || !p.productType);
+      return this.masterStore.products.filter(p => p.productType === 'MANUFACTURE' || p.productType === 'RND' || !p.productType);
     },
     availableVersions() {
       if (!this.form.productId) return [];
@@ -521,7 +521,7 @@ export default {
     nextStep() {
       if (this.currentStep === 1) {
         if (!this.form.productId || !this.form.versionId || !this.form.hardwareRevisionId) {
-          alert('Please select an R&D Product, Version, and Hardware Revision.');
+          alert('Please select a Manufacture Product, Version, and Hardware Revision.');
           return;
         }
         if (!this.form.code) this.generateCode();

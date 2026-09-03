@@ -996,8 +996,8 @@ func SeedPhase2(db *gorm.DB) {
 }
 
 func SeedPhase2C(db *gorm.DB) {
-	// 1. Ensure existing products have ProductType = 'RND'
-	db.Model(&model.Product{}).Where("product_type IS NULL OR product_type = ''").Update("product_type", model.ProductTypeRND)
+	// 1. Ensure existing products have ProductType = 'MANUFACTURE'
+	db.Model(&model.Product{}).Where("product_type IS NULL OR product_type = ''").Update("product_type", model.ProductTypeManufacture)
 
 	// 2. Seed Trading Products if not present
 	var trdCount int64
@@ -1138,11 +1138,11 @@ func SeedPhase2C(db *gorm.DB) {
 				Name:             "Smart Edge Gateway GW-400X",
 				ProductID:        strPtr("PRD-2024-001"),
 				ProductCode:      "PRD-2024-001",
-				ProductType:      model.ProductTypeRND,
+				ProductType:      model.ProductTypeManufacture,
 				Quantity:         1.0,
 				UnitName:         "pcs",
 				SortOrder:        1,
-				Notes:            "References internal R&D Product Master PRD-2024-001. Handles LTE Cat-M1 and Modbus polling.",
+				Notes:            "References internal Manufactured Product Master PRD-2024-001. Handles LTE Cat-M1 and Modbus polling.",
 				Status:           "Active",
 				CreatedAt:        time.Now().AddDate(0, -2, 0),
 				UpdatedAt:        time.Now().AddDate(0, -2, 0),
@@ -1155,7 +1155,7 @@ func SeedPhase2C(db *gorm.DB) {
 				Name:             "Smart Air Quality Monitor AQM-200",
 				ProductID:        strPtr("PRD-2024-002"),
 				ProductCode:      "PRD-2024-002",
-				ProductType:      model.ProductTypeRND,
+				ProductType:      model.ProductTypeManufacture,
 				Quantity:         1.0,
 				UnitName:         "pcs",
 				SortOrder:        2,

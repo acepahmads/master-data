@@ -121,8 +121,8 @@ func (s *PrototypeService) Create(req CreatePrototypeRequest, userID, userName, 
 	}
 
 	productType := strings.ToUpper(strings.TrimSpace(product.ProductType))
-	if productType != "RND" && productType != "" {
-		return nil, fmt.Errorf("only R&D Products may create Prototype Builds. Product '%s' has type '%s' and is ineligible", product.Code, product.ProductType)
+	if productType != "MANUFACTURE" && productType != "RND" && productType != "" {
+		return nil, fmt.Errorf("only Manufacture Products may create Prototype Builds. Product '%s' has type '%s' and is ineligible", product.Code, product.ProductType)
 	}
 
 	// 4. Validate / Allocate Build Number for Revision

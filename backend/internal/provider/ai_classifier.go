@@ -106,10 +106,10 @@ func (h *HeuristicRuleAIClassifier) SuggestClassification(ctx context.Context, i
 		out.ItemClassification = "PRODUCT"
 
 		// Dynamic Context-Aware Product Type inference:
-		if strings.Contains(fileLower, "bom") || strings.Contains(fileLower, "rnd") ||
-			strings.Contains(fileLower, "schematic") || strings.Contains(codeLower, "rnd") {
-			out.ProductType = "RND"
-			out.Reasoning = "Identified as an In-House R&D engineering product."
+		if strings.Contains(fileLower, "bom") || strings.Contains(fileLower, "rnd") || strings.Contains(fileLower, "manufacture") || strings.Contains(fileLower, "mfg") ||
+			strings.Contains(fileLower, "schematic") || strings.Contains(codeLower, "rnd") || strings.Contains(codeLower, "mfg") {
+			out.ProductType = "MANUFACTURE"
+			out.Reasoning = "Identified as an In-House Manufactured engineering product."
 		} else {
 			out.ProductType = "TRADING"
 			out.Reasoning = "Identified as commercially sourced finished product/instrument."
@@ -173,9 +173,9 @@ func (h *HeuristicRuleAIClassifier) SuggestClassification(ctx context.Context, i
 		return out, nil
 	}
 
-	// 5. Default fallback based on document context -> PRODUCT (TRADING)
-	if strings.Contains(fileLower, "bom") || strings.Contains(fileLower, "rnd") {
-		out.ProductType = "RND"
+	// 5. Default fallback based on document context -> PRODUCT (TRADING / MANUFACTURE)
+	if strings.Contains(fileLower, "bom") || strings.Contains(fileLower, "rnd") || strings.Contains(fileLower, "manufacture") {
+		out.ProductType = "MANUFACTURE"
 	} else {
 		out.ProductType = "TRADING"
 	}

@@ -106,7 +106,7 @@
             <select v-model="editForm.productType" class="form-select text-xs">
               <option value="TRADING">TRADING (Commercial Sourced)</option>
               <option value="PROJECT">PROJECT (Turnkey Solution)</option>
-              <option value="RND">RND (In-House Engineering)</option>
+              <option value="MANUFACTURE">MANUFACTURE (In-House Manufactured)</option>
             </select>
           </div>
         </div>

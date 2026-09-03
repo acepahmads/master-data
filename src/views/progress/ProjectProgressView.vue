@@ -19,7 +19,7 @@
           </div>
         </div>
         <p class="text-xs text-slate-500 mt-1.5 font-medium max-w-3xl leading-relaxed">
-          {{ meta.subtitle }}. Unified central platform governing 3 product archetypes (<span class="font-semibold text-purple-700">Trading</span>, <span class="font-semibold text-cyan-700">Project Solutions</span>, <span class="font-semibold text-emerald-700">In-House R&D</span>) over a normalized Master Data Foundation.
+          {{ meta.subtitle }}. Unified central platform governing 3 product archetypes (<span class="font-semibold text-purple-700">Trading</span>, <span class="font-semibold text-cyan-700">Project Solutions</span>, <span class="font-semibold text-emerald-700">Manufacture</span>) over a normalized Master Data Foundation.
         </p>
       </div>
 
@@ -249,12 +249,12 @@
             <AppIcon name="layers" size="sm" class="text-purple-600" />
             <span>PRODUCT MASTER & 3-TIER ARCHITECTURE (Layer 2)</span>
           </h2>
-          <p class="text-xs text-slate-500 mt-0.5">Architectural classification into Trading, Project Solutions, and In-House R&D hardware.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Architectural classification into Trading, Project Solutions, and Manufacture hardware.</p>
         </div>
         <div class="flex items-center gap-1.5 text-3xs font-mono font-semibold">
           <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">TRADING</span>
           <span class="px-2 py-0.5 rounded bg-cyan-50 text-cyan-700 border border-cyan-200">PROJECT</span>
-          <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">R&D</span>
+          <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">MANUFACTURE</span>
         </div>
       </div>
 
@@ -352,14 +352,14 @@
           </div>
         </div>
 
-        <!-- R&D PRODUCT -->
+        <!-- MANUFACTURE PRODUCT -->
         <div class="bg-white rounded-2xl p-5 border border-emerald-200/80 shadow-2xs flex flex-col justify-between relative overflow-hidden">
           <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-bl-full pointer-events-none"></div>
           <div>
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
                 <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-mono font-bold border border-emerald-300">
-                  R&D PRODUCT
+                  MANUFACTURE PRODUCT
                 </span>
               </div>
               <span class="text-xs font-mono font-bold text-emerald-700">{{ rndCount }} Registered</span>
@@ -636,7 +636,7 @@ export default {
       return cnt > 0 ? cnt : 1;
     },
     rndCount() {
-      const cnt = this.store.products.filter(p => (p.productType || p.type || '').toUpperCase() === 'RND' || !p.productType).length;
+      const cnt = this.store.products.filter(p => ['MANUFACTURE', 'RND'].includes((p.productType || p.type || '').toUpperCase()) || !p.productType).length;
       return cnt > 0 ? cnt : 1;
     },
     totalComponentsCount() {

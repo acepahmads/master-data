@@ -121,6 +121,9 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	_ = db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_ecr_code_del ON engineering_change_requests(code, deleted_at);")
 	_ = db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_eco_code_del ON engineering_change_orders(code, deleted_at);")
 	_ = db.Exec("ALTER TABLE imp_staged_rows MODIFY COLUMN selling_price DECIMAL(20,4) DEFAULT 0, MODIFY COLUMN unit_cost DECIMAL(20,4) DEFAULT 0;")
+	_ = db.Exec("UPDATE products SET product_type = 'MANUFACTURE' WHERE product_type IN ('RND', 'R&D');")
+	_ = db.Exec("UPDATE imp_staged_rows SET product_type = 'MANUFACTURE' WHERE product_type IN ('RND', 'R&D');")
+	_ = db.Exec("UPDATE project_items SET product_type = 'MANUFACTURE' WHERE product_type IN ('RND', 'R&D');")
 
 	DB = db
 	log.Println("[INFO] Database connected and schema auto-migrated successfully.")

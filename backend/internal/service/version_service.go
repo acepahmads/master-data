@@ -139,9 +139,9 @@ func (s *VersionService) Create(v *model.ProductVersion, currentUser *model.User
 		return nil, errors.New("associated product master not found")
 	}
 
-	// Validate product type: ONLY R&D products are allowed to have versions
-	if prod.ProductType != "" && prod.ProductType != model.ProductTypeRND {
-		return nil, fmt.Errorf("cannot create version baseline: product '%s' is of type %s (versioning is strictly restricted to R&D Products)", prod.Code, prod.ProductType)
+	// Validate product type: ONLY Manufacture products are allowed to have versions
+	if prod.ProductType != "" && prod.ProductType != model.ProductTypeManufacture && prod.ProductType != "RND" {
+		return nil, fmt.Errorf("cannot create version baseline: product '%s' is of type %s (versioning is strictly restricted to Manufacture Products)", prod.Code, prod.ProductType)
 	}
 
 	v.ProductID = prod.ID
