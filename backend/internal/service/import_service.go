@@ -951,6 +951,26 @@ func (s *ImportService) ApproveBatch(batchID string, user string) (*model.Import
 	return s.importRepo.GetBatchByID(batch.ID)
 }
 
+// deriveProjectNameFromFile cleans up file names into meaningful project names for Master Data.
+func (s *ImportService) deriveProjectNameFromFile(originalFileName string, fallbackName string, totalFiles int) string {
+	if totalFiles == 1 && strings.TrimSpace(fallbackName) != "" {
+		return strings.TrimSpace(fallbackName)
+	}
+
+	cleaned := strings.TrimSpace(originalFileName)
+	if idx := strings.LastIndex(cleaned, "."); idx != -1 {
+		cleaned = cleaned[:idx]
+	}
+	// Strip document/quotation code prefix like CQC08260429 - or CQC07260411-R1-
+	rePrefix := regexp.MustCompile(`^[A-Za-z0-9_-]+\s*[-:]\s*`)
+	cleaned = rePrefix.ReplaceAllString(cleaned, "")
+	cleaned = strings.TrimSpace(cleaned)
+	if cleaned == "" {
+		cleaned = originalFileName
+	}
+	return cleaned
+}
+
 // CommitApprovedBatch dispatches approved staged rows into production Master tables atomically.
 func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentProjectName string) (map[string]interface{}, error) {
 	batch, err := s.importRepo.GetBatchByID(batchID)
@@ -969,114 +989,170 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 
 	var createdProds, createdComps, createdServices int
 	var committedRowIDs []string
-	var parentProjectID string
+	var projectTargets []struct {
+		FileID      string
+		ProjectID   string
+		ProjectName string
+	}
 
 	// Execute transactional master data creation
 	txErr := s.importRepo.DB().Transaction(func(tx *gorm.DB) error {
-		// If Parent Project Name is specified, create or resolve the parent Project in master products
-		if strings.TrimSpace(parentProjectName) != "" {
-			parentName := strings.TrimSpace(parentProjectName)
-			parentCode := fmt.Sprintf("PRJ-%s-%s", batch.SourceYear, strings.ToUpper(uuid.New().String()[:6]))
+		type projectTarget struct {
+			FileID      string
+			ProjectID   string
+			ProjectName string
+		}
+		var projectTargets []projectTarget
 
-			// Extract metadata from source workbook (Customer, Company, Phone, Quotation No, Payment Terms, Notes)
-			files, _ := s.importRepo.GetFilesByBatchID(batch.ID)
-			var meta map[string]string
-			if len(files) > 0 {
-				meta = s.parser.ExtractWorkbookMetadata(files[0].StoragePath)
-			}
+		files, _ := s.importRepo.GetFilesByBatchID(batch.ID)
 
-			clientName := user
-			targetMarket := "Industrial IoT"
-			if meta != nil && meta["customerName"] != "" {
-				clientName = meta["customerName"]
-			}
-			if meta != nil && meta["customerCompany"] != "" {
-				targetMarket = meta["customerCompany"]
-			}
+		if len(files) > 0 {
+			for _, f := range files {
+				pName := s.deriveProjectNameFromFile(f.OriginalFileName, parentProjectName, len(files))
+				if pName == "" {
+					continue
+				}
 
-			docTitle := "RENCANA ANGGARAN BIAYA MAINTENANCE & VALIDASI SPARING"
-			if meta != nil && meta["documentTitle"] != "" {
-				docTitle = meta["documentTitle"]
-			}
+				pCode := fmt.Sprintf("PRJ-%s-%s", batch.SourceYear, strings.ToUpper(uuid.New().String()[:6]))
+				meta := s.parser.ExtractWorkbookMetadata(f.StoragePath)
 
-			customerInfo := "Kepada Yth:\n"
-			if meta != nil && meta["customerName"] != "" {
-				customerInfo += fmt.Sprintf("  %s\n", meta["customerName"])
-			} else {
-				customerInfo += fmt.Sprintf("  %s\n", user)
-			}
-			if meta != nil && meta["customerCompany"] != "" {
-				customerInfo += fmt.Sprintf("  %s\n", meta["customerCompany"])
-			}
-			if meta != nil && meta["customerPhone"] != "" {
-				customerInfo += fmt.Sprintf("  Phone. : %s\n", meta["customerPhone"])
-			} else {
-				customerInfo += "  Phone. : -\n"
-			}
-			if meta != nil && meta["customerEmail"] != "" {
-				customerInfo += fmt.Sprintf("  Email  : %s\n", meta["customerEmail"])
-			} else {
-				customerInfo += "  Email  : -\n"
-			}
+				clientName := user
+				targetMarket := "Industrial IoT"
+				if meta != nil && meta["customerName"] != "" {
+					clientName = meta["customerName"]
+				}
+				if meta != nil && meta["customerCompany"] != "" {
+					targetMarket = meta["customerCompany"]
+				}
 
-			docCommercial := "Informasi Dokumen & Ketentuan:\n"
-			if meta != nil && meta["documentNumber"] != "" {
-				docCommercial += fmt.Sprintf("  Nomor       : %s\n", meta["documentNumber"])
-			}
-			if meta != nil && meta["quotationDate"] != "" {
-				docCommercial += fmt.Sprintf("  Tanggal     : %s\n", meta["quotationDate"])
-			}
-			if meta != nil && meta["reference"] != "" {
-				docCommercial += fmt.Sprintf("  Reff        : %s\n", meta["reference"])
-			}
-			if meta != nil && meta["paymentTerms"] != "" {
-				docCommercial += fmt.Sprintf("  Pembayaran  : %s\n", meta["paymentTerms"])
-			}
-			if meta != nil && meta["validity"] != "" {
-				docCommercial += fmt.Sprintf("  Validity    : %s\n", meta["validity"])
-			}
-			if meta != nil && meta["currency"] != "" {
-				docCommercial += fmt.Sprintf("  Currency    : %s\n", meta["currency"])
-			}
+				docTitle := pName
+				if meta != nil && meta["documentTitle"] != "" {
+					docTitle = meta["documentTitle"]
+				}
 
-			fullDesc := fmt.Sprintf("%s\n\n%s\n\n%s", docTitle, strings.TrimSpace(customerInfo), strings.TrimSpace(docCommercial))
+				customerInfo := "Kepada Yth:\n"
+				if meta != nil && meta["customerName"] != "" {
+					customerInfo += fmt.Sprintf("  %s\n", meta["customerName"])
+				} else {
+					customerInfo += fmt.Sprintf("  %s\n", user)
+				}
+				if meta != nil && meta["customerCompany"] != "" {
+					customerInfo += fmt.Sprintf("  %s\n", meta["customerCompany"])
+				}
+				if meta != nil && meta["customerPhone"] != "" {
+					customerInfo += fmt.Sprintf("  Phone. : %s\n", meta["customerPhone"])
+				} else {
+					customerInfo += "  Phone. : -\n"
+				}
+				if meta != nil && meta["customerEmail"] != "" {
+					customerInfo += fmt.Sprintf("  Email  : %s\n", meta["customerEmail"])
+				} else {
+					customerInfo += "  Email  : -\n"
+				}
 
+				docCommercial := "Informasi Dokumen & Ketentuan:\n"
+				if meta != nil && meta["documentNumber"] != "" {
+					docCommercial += fmt.Sprintf("  Nomor       : %s\n", meta["documentNumber"])
+				}
+				if meta != nil && meta["quotationDate"] != "" {
+					docCommercial += fmt.Sprintf("  Tanggal     : %s\n", meta["quotationDate"])
+				}
+				if meta != nil && meta["reference"] != "" {
+					docCommercial += fmt.Sprintf("  Reff        : %s\n", meta["reference"])
+				}
+				if meta != nil && meta["paymentTerms"] != "" {
+					docCommercial += fmt.Sprintf("  Pembayaran  : %s\n", meta["paymentTerms"])
+				}
+				if meta != nil && meta["validity"] != "" {
+					docCommercial += fmt.Sprintf("  Validity    : %s\n", meta["validity"])
+				}
+				if meta != nil && meta["currency"] != "" {
+					docCommercial += fmt.Sprintf("  Currency    : %s\n", meta["currency"])
+				}
+
+				fullDesc := fmt.Sprintf("%s\n\n%s\n\n%s", docTitle, strings.TrimSpace(customerInfo), strings.TrimSpace(docCommercial))
+
+				var pID string
+				var existingParent model.Product
+				if err := tx.Unscoped().Where("name = ? AND product_type = ?", pName, "PROJECT").First(&existingParent).Error; err == nil {
+					existingParent.DeletedAt = gorm.DeletedAt{}
+					existingParent.Status = "Active"
+					if clientName != "" {
+						existingParent.ProjectLead = clientName
+					}
+					if targetMarket != "" {
+						existingParent.TargetMarket = targetMarket
+					}
+					if fullDesc != "" {
+						existingParent.Description = fullDesc
+						existingParent.LongDescription = fullDesc
+					}
+					existingParent.UpdatedAt = time.Now()
+					_ = tx.Save(&existingParent).Error
+					pID = existingParent.ID
+				} else {
+					newParent := model.Product{
+						ID:              fmt.Sprintf("PRD-%s", uuid.New().String()[:8]),
+						Code:            pCode,
+						Name:            pName,
+						Category:        "Project Solutions",
+						Status:          "Active",
+						ProductType:     "PROJECT",
+						ProjectLead:     clientName,
+						TargetMarket:    targetMarket,
+						Description:     fullDesc,
+						LongDescription: fullDesc,
+						CreatedAt:       time.Now(),
+						UpdatedAt:       time.Now(),
+					}
+					if err := tx.Create(&newParent).Error; err == nil {
+						pID = newParent.ID
+						createdProds++
+					}
+				}
+
+				if pID != "" {
+					projectTargets = append(projectTargets, projectTarget{
+						FileID:      f.ID,
+						ProjectID:   pID,
+						ProjectName: pName,
+					})
+				}
+			}
+		} else if strings.TrimSpace(parentProjectName) != "" {
+			pName := strings.TrimSpace(parentProjectName)
+			pCode := fmt.Sprintf("PRJ-%s-%s", batch.SourceYear, strings.ToUpper(uuid.New().String()[:6]))
+			var pID string
 			var existingParent model.Product
-			if err := tx.Unscoped().Where("name = ? AND product_type = ?", parentName, "PROJECT").First(&existingParent).Error; err == nil {
+			if err := tx.Unscoped().Where("name = ? AND product_type = ?", pName, "PROJECT").First(&existingParent).Error; err == nil {
 				existingParent.DeletedAt = gorm.DeletedAt{}
 				existingParent.Status = "Active"
-				if clientName != "" {
-					existingParent.ProjectLead = clientName
-				}
-				if targetMarket != "" {
-					existingParent.TargetMarket = targetMarket
-				}
-				if fullDesc != "" {
-					existingParent.Description = fullDesc
-					existingParent.LongDescription = fullDesc
-				}
 				existingParent.UpdatedAt = time.Now()
 				_ = tx.Save(&existingParent).Error
-				parentProjectID = existingParent.ID
+				pID = existingParent.ID
 			} else {
 				newParent := model.Product{
-					ID:              fmt.Sprintf("PRD-%s", uuid.New().String()[:8]),
-					Code:            parentCode,
-					Name:            parentName,
-					Category:        "Project Solutions",
-					Status:          "Active",
-					ProductType:     "PROJECT",
-					ProjectLead:     clientName,
-					TargetMarket:    targetMarket,
-					Description:     fullDesc,
-					LongDescription: fullDesc,
-					CreatedAt:       time.Now(),
-					UpdatedAt:       time.Now(),
+					ID:          fmt.Sprintf("PRD-%s", uuid.New().String()[:8]),
+					Code:        pCode,
+					Name:        pName,
+					Category:    "Project Solutions",
+					Status:      "Active",
+					ProductType: "PROJECT",
+					ProjectLead: user,
+					CreatedAt:   time.Now(),
+					UpdatedAt:   time.Now(),
 				}
 				if err := tx.Create(&newParent).Error; err == nil {
-					parentProjectID = newParent.ID
+					pID = newParent.ID
 					createdProds++
 				}
+			}
+			if pID != "" {
+				projectTargets = append(projectTargets, projectTarget{
+					FileID:      "",
+					ProjectID:   pID,
+					ProjectName: pName,
+				})
 			}
 		}
 
@@ -1342,17 +1418,32 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 			_ = tx.Save(row).Error
 		}
 
-		// Build / Sync Project Hierarchy (project_items) under parentProjectID
-		if parentProjectID != "" {
-			// Clear existing project items for idempotency
-			tx.Where("project_product_id = ?", parentProjectID).Delete(&model.ProjectItem{})
+		// Build / Sync Project Hierarchy (project_items) isolated for each project target
+		for _, target := range projectTargets {
+			// Clear existing project items for this project for idempotency
+			tx.Where("project_product_id = ?", target.ProjectID).Delete(&model.ProjectItem{})
+
+			var fileRows []*model.ImportStagedRow
+			for i := range approvedRows {
+				row := &approvedRows[i]
+				if target.FileID != "" {
+					if row.FileID == target.FileID {
+						fileRows = append(fileRows, row)
+					}
+				} else {
+					fileRows = append(fileRows, row)
+				}
+			}
+
+			if len(fileRows) == 0 {
+				continue
+			}
 
 			var currentSectionItemID *string
 			var currentSubGroupID *string
 			var lastSectionName string
 
-			for i := range approvedRows {
-				row := &approvedRows[i]
+			for _, row := range fileRows {
 				cleanMasterName := s.stripLeadingNumberPrefix(row.NormalizedName)
 				rawNameTrim := strings.TrimSpace(row.NormalizedName)
 
@@ -1375,7 +1466,7 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 					if !isSecHeader {
 						secItem := model.ProjectItem{
 							ID:               fmt.Sprintf("PRJ-SEC-%s", uuid.New().String()[:8]),
-							ProjectProductID: parentProjectID,
+							ProjectProductID: target.ProjectID,
 							ItemType:         model.ProjectItemTypeSubAssembly,
 							Name:             row.NormalizedCategory,
 							Quantity:         1.0,
@@ -1398,7 +1489,7 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 				if isSecHeader {
 					secItem := model.ProjectItem{
 						ID:               fmt.Sprintf("PRJ-SEC-%s", uuid.New().String()[:8]),
-						ProjectProductID: parentProjectID,
+						ProjectProductID: target.ProjectID,
 						ItemType:         model.ProjectItemTypeSubAssembly,
 						Name:             rawNameTrim,
 						Quantity:         1.0,
@@ -1427,7 +1518,7 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 				if isSubGroupHeader {
 					subGroupItem := model.ProjectItem{
 						ID:               fmt.Sprintf("PRJ-GRP-%s", uuid.New().String()[:8]),
-						ProjectProductID: parentProjectID,
+						ProjectProductID: target.ProjectID,
 						ParentItemID:     currentSectionItemID,
 						ItemType:         model.ProjectItemTypeSubAssembly,
 						Name:             rawNameTrim,
@@ -1472,7 +1563,7 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 					}
 					prjItem = model.ProjectItem{
 						ID:               fmt.Sprintf("PRJ-ITM-%s", uuid.New().String()[:8]),
-						ProjectProductID: parentProjectID,
+						ProjectProductID: target.ProjectID,
 						ParentItemID:     targetParentID,
 						ItemType:         model.ProjectItemTypeProduct,
 						Name:             cleanMasterName,
@@ -1504,7 +1595,7 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 					}
 					prjItem = model.ProjectItem{
 						ID:               fmt.Sprintf("PRJ-ITM-%s", uuid.New().String()[:8]),
-						ProjectProductID: parentProjectID,
+						ProjectProductID: target.ProjectID,
 						ParentItemID:     targetParentID,
 						ItemType:         model.ProjectItemTypeComponent,
 						Name:             cleanMasterName,
@@ -1536,7 +1627,7 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 					}
 					prjItem = model.ProjectItem{
 						ID:               fmt.Sprintf("PRJ-ITM-%s", uuid.New().String()[:8]),
-						ProjectProductID: parentProjectID,
+						ProjectProductID: target.ProjectID,
 						ParentItemID:     targetParentID,
 						ItemType:         model.ProjectItemTypeSubAssembly,
 						Name:             row.NormalizedName,
@@ -1583,6 +1674,18 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 		CreatedAt:   time.Now(),
 	})
 
+	var projectNames []string
+	var projectIDs []string
+	for _, pt := range projectTargets {
+		projectNames = append(projectNames, pt.ProjectName)
+		projectIDs = append(projectIDs, pt.ProjectID)
+	}
+	resParentName := strings.Join(projectNames, ", ")
+	resParentID := ""
+	if len(projectIDs) > 0 {
+		resParentID = projectIDs[0]
+	}
+
 	return map[string]interface{}{
 		"batchCode":         batch.BatchCode,
 		"status":            "IMPORTED",
@@ -1590,8 +1693,8 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 		"createdProducts":   createdProds,
 		"createdComponents": createdComps,
 		"createdServices":   createdServices,
-		"parentProjectId":   parentProjectID,
-		"parentProjectName": parentProjectName,
+		"parentProjectId":   resParentID,
+		"parentProjectName": resParentName,
 		"importedAt":        time.Now(),
 	}, nil
 }

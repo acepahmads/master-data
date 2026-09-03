@@ -315,3 +315,41 @@ func TestSmartHierarchicalSubPointParsing(t *testing.T) {
 		t.Errorf("Row 8 name mismatch: %s", stagedRows[8].NormalizedName)
 	}
 }
+
+func TestDeriveProjectNameFromFile(t *testing.T) {
+	svc := &ImportService{}
+
+	tests := []struct {
+		filename   string
+		fallback   string
+		totalFiles int
+		expected   string
+	}{
+		{
+			filename:   "CQC08260429 - RAB Maintenance SPARING - Lipo R1.xlsx",
+			fallback:   "Some Custom Name",
+			totalFiles: 2,
+			expected:   "RAB Maintenance SPARING - Lipo R1",
+		},
+		{
+			filename:   "CQC07260411-R1- BC50- - Papyrus .xlsx",
+			fallback:   "Some Custom Name",
+			totalFiles: 2,
+			expected:   "BC50- - Papyrus",
+		},
+		{
+			filename:   "CQC08260429 - RAB Maintenance SPARING - Lipo R1.xlsx",
+			fallback:   "Custom Single Project",
+			totalFiles: 1,
+			expected:   "Custom Single Project",
+		},
+	}
+
+	for _, tt := range tests {
+		result := svc.deriveProjectNameFromFile(tt.filename, tt.fallback, tt.totalFiles)
+		if result != tt.expected {
+			t.Errorf("deriveProjectNameFromFile(%s, %s, %d) = '%s', expected '%s'", tt.filename, tt.fallback, tt.totalFiles, result, tt.expected)
+		}
+	}
+}
+
