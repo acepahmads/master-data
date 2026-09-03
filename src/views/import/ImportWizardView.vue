@@ -475,13 +475,13 @@ export default {
       for (const f of this.batch?.files || []) {
         map[f.id] = {};
         const manifest = this.parseManifest(f.sheetManifestJson);
-        for (const s of manifest) {
-          // Default unchecklist di awal: user yang pilih dan cek dulu datanya
-          map[f.id][s.name] = false;
+        manifest.forEach((s, sIdx) => {
+          // Hanya checklist 1 sheet pertama, sheet lain user yang pilih dan cek dulu datanya
+          map[f.id][s.name] = (sIdx === 0);
           if (this.headerRowOverrides[s.name] === undefined) {
             headerMap[s.name] = s.headerRowIndex || 1;
           }
-        }
+        });
       }
       this.selectedSheetsMap = map;
       this.headerRowOverrides = { ...this.headerRowOverrides, ...headerMap };
