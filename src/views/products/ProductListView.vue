@@ -87,6 +87,22 @@
           {{ prjCount }}
         </span>
       </button>
+
+      <button
+        @click="selectedProductType = 'SERVICE'"
+        :class="[
+          'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2',
+          selectedProductType === 'SERVICE'
+            ? 'bg-amber-600 text-white shadow-2xs'
+            : 'bg-white text-slate-600 hover:bg-amber-50 hover:text-amber-700 border border-slate-200'
+        ]"
+      >
+        <AppIcon name="tool" size="xs" />
+        <span>Service Products</span>
+        <span class="text-3xs font-mono px-1.5 py-0.2 rounded-full" :class="selectedProductType === 'SERVICE' ? 'bg-amber-700 text-amber-100' : 'bg-amber-50 text-amber-700'">
+          {{ srvCount }}
+        </span>
+      </button>
     </div>
 
     <!-- Filter & Search Workspace -->
@@ -241,10 +257,11 @@
                     'text-3xs font-mono font-bold px-2 py-0.5 rounded-full border shadow-2xs inline-flex items-center gap-1 whitespace-nowrap',
                     p.productType === 'TRADING' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                     p.productType === 'PROJECT' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' :
+                    p.productType === 'SERVICE' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                     'bg-emerald-50 text-emerald-700 border-emerald-200'
                   ]"
                 >
-                  <AppIcon :name="p.productType === 'TRADING' ? 'shopping-bag' : p.productType === 'PROJECT' ? 'layers' : 'cpu'" size="xs" />
+                  <AppIcon :name="p.productType === 'TRADING' ? 'shopping-bag' : p.productType === 'PROJECT' ? 'layers' : p.productType === 'SERVICE' ? 'tool' : 'cpu'" size="xs" />
                   <span>{{ (p.productType === 'RND' ? 'MANUFACTURE' : p.productType) || 'MANUFACTURE' }}</span>
                 </span>
               </td>
@@ -572,6 +589,9 @@ export default {
     },
     prjCount() {
       return this.store.products.filter(p => p.productType === 'PROJECT').length;
+    },
+    srvCount() {
+      return this.store.products.filter(p => p.productType === 'SERVICE').length;
     },
     uniqueCategories() {
       const set = new Set(this.store.products.map(p => p.category).filter(Boolean));

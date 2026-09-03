@@ -211,6 +211,7 @@
                   <option value="TRADING">TRADING</option>
                   <option value="PROJECT">PROJECT</option>
                   <option value="MANUFACTURE">MANUFACTURE</option>
+                  <option value="SERVICE">SERVICE</option>
                 </select>
                 <span v-else class="text-3xs text-slate-300">-</span>
               </td>

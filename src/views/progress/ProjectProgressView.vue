@@ -19,7 +19,7 @@
           </div>
         </div>
         <p class="text-xs text-slate-500 mt-1.5 font-medium max-w-3xl leading-relaxed">
-          {{ meta.subtitle }}. Unified central platform governing 3 product archetypes (<span class="font-semibold text-purple-700">Trading</span>, <span class="font-semibold text-cyan-700">Project Solutions</span>, <span class="font-semibold text-emerald-700">Manufacture</span>) over a normalized Master Data Foundation.
+          {{ meta.subtitle }}. Unified central platform governing 4 product archetypes (<span class="font-semibold text-purple-700">Trading</span>, <span class="font-semibold text-cyan-700">Project Solutions</span>, <span class="font-semibold text-emerald-700">Manufacture</span>, <span class="font-semibold text-amber-700">Service</span>) over a normalized Master Data Foundation.
         </p>
       </div>
 

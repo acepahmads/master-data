@@ -19,7 +19,7 @@
             <span class="text-lg">⚡</span>
           </h1>
           <p class="text-xs text-slate-300 max-w-2xl mt-1 leading-relaxed">
-            Centralized platform governing Product Master (Trading, Project & Manufacture), central component library, parametric specifications, and multi-tier engineering lifecycles.
+            Centralized platform governing Product Master (Trading, Project, Manufacture & Service), central component library, parametric specifications, and multi-tier engineering lifecycles.
           </p>
         </div>
 
@@ -429,7 +429,7 @@
           </div>
 
           <p class="text-2xs text-slate-300 leading-relaxed">
-            All registered products (Trading, Project & Manufacture), components, suppliers, and change orders comply with enterprise PLM standards across Phases 1–6.
+            All registered products (Trading, Project, Manufacture & Service), components, suppliers, and change orders comply with enterprise PLM standards across Phases 1–6.
           </p>
 
           <div class="grid grid-cols-2 gap-2 pt-2 font-mono text-3xs text-slate-400 border-t border-slate-800">

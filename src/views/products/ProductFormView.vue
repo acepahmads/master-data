@@ -32,8 +32,8 @@
           <span class="text-3xs text-slate-500">Controls available modules, lifecycle rules, and composition capabilities</span>
         </div>
 
-        <!-- 3 Product Type Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <!-- 4 Product Type Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <!-- CARD 1: MANUFACTURE PRODUCT -->
           <div
             @click="setProductType('MANUFACTURE')"
@@ -138,6 +138,42 @@
               </div>
               <div class="text-slate-400 flex items-center gap-1">
                 <span>✕</span> <span>No Internal Manufacture BOM Duplication</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 4: SERVICE PRODUCT -->
+          <div
+            @click="setProductType('SERVICE')"
+            :class="[
+              'p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between select-none relative overflow-hidden',
+              form.productType === 'SERVICE'
+                ? 'border-amber-500 bg-amber-50/40 shadow-xs'
+                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+            ]"
+          >
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <div class="w-8 h-8 rounded-lg bg-amber-100/80 text-amber-700 flex items-center justify-center font-bold">
+                  <AppIcon name="tool" size="xs" />
+                </div>
+                <span v-if="form.productType === 'SERVICE'" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              </div>
+              <h3 class="font-bold text-xs text-slate-900">SERVICE PRODUCT</h3>
+              <p class="text-3xs text-slate-500 mt-1 leading-relaxed">
+                Customer-owned equipment received for engineering service, maintenance, calibration, repair, or overhaul.
+              </p>
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-slate-200/80 space-y-1 text-3xs">
+              <div class="text-amber-700 font-medium flex items-center gap-1">
+                <span>✓</span> <span>Customer Servicing & Maintenance Terms</span>
+              </div>
+              <div class="text-amber-700 font-medium flex items-center gap-1">
+                <span>✓</span> <span>Service Fee & Labor Cost Structure</span>
+              </div>
+              <div class="text-slate-400 flex items-center gap-1">
+                <span>✕</span> <span>No Internal BOM Duplication</span>
               </div>
             </div>
           </div>
@@ -386,15 +422,17 @@
 
       <!-- SECTION 02: DYNAMIC SPECIFICATIONS ACCORDING TO PRODUCT TYPE -->
 
-      <!-- A: IF TRADING PRODUCT -> COMMERCIAL SOURCING & MULTI-CURRENCY PRICING -->
-      <div v-if="form.productType === 'TRADING'" class="bg-white rounded-lg border border-purple-200 shadow-card p-5 space-y-6">
-        <div class="flex items-center justify-between pb-3 border-b border-purple-100">
+      <!-- A: IF TRADING OR SERVICE PRODUCT -> COMMERCIAL SOURCING & MULTI-CURRENCY PRICING -->
+      <div v-if="form.productType === 'TRADING' || form.productType === 'SERVICE'" :class="form.productType === 'SERVICE' ? 'bg-white rounded-lg border border-amber-200 shadow-card p-5 space-y-6' : 'bg-white rounded-lg border border-purple-200 shadow-card p-5 space-y-6'">
+        <div class="flex items-center justify-between pb-3 border-b" :class="form.productType === 'SERVICE' ? 'border-amber-100' : 'border-purple-100'">
           <div class="flex items-center gap-2">
-            <AppIcon name="shopping-bag" size="sm" class="text-purple-600" />
-            <h2 class="text-xs font-bold uppercase tracking-wider text-purple-900">Trading Commercial & Sourcing Parameters</h2>
+            <AppIcon :name="form.productType === 'SERVICE' ? 'tool' : 'shopping-bag'" size="sm" :class="form.productType === 'SERVICE' ? 'text-amber-600' : 'text-purple-600'" />
+            <h2 class="text-xs font-bold uppercase tracking-wider" :class="form.productType === 'SERVICE' ? 'text-amber-900' : 'text-purple-900'">
+              {{ form.productType === 'SERVICE' ? 'Service Commercial & Maintenance Parameters' : 'Trading Commercial & Sourcing Parameters' }}
+            </h2>
           </div>
-          <span class="text-3xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-            MULTI-CURRENCY PRICING ENGINE
+          <span class="text-3xs font-mono font-bold px-2.5 py-0.5 rounded-full" :class="form.productType === 'SERVICE' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-purple-50 text-purple-700 border border-purple-200'">
+            {{ form.productType === 'SERVICE' ? 'SERVICE PRICING ENGINE' : 'MULTI-CURRENCY PRICING ENGINE' }}
           </span>
         </div>
 
@@ -1029,6 +1067,8 @@ export default {
         prefix = 'PRD-TRD';
       } else if (this.form.productType === 'PROJECT') {
         prefix = 'PRD-PRJ';
+      } else if (this.form.productType === 'SERVICE') {
+        prefix = 'PRD-SRV';
       }
       this.form.code = `${prefix}-2024-${String(count).padStart(3, '0')}`;
     },
@@ -1055,14 +1095,14 @@ export default {
         ...this.form,
         images: JSON.stringify(this.productImages),
         image: this.productImages.length > 0 ? this.productImages[0] : '',
-        tradingDetail: this.form.productType === 'TRADING' ? this.tradingForm : null
+        tradingDetail: (this.form.productType === 'TRADING' || this.form.productType === 'SERVICE') ? this.tradingForm : null
       };
 
       try {
         const saved = await this.store.saveProduct(payload);
         const targetId = saved.id || this.form.id || this.form.code;
 
-        if (this.form.productType === 'TRADING' && this.isEdit) {
+        if ((this.form.productType === 'TRADING' || this.form.productType === 'SERVICE') && this.isEdit) {
           await this.store.saveTradingDetail(targetId, this.tradingForm);
         }
 

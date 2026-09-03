@@ -27,10 +27,11 @@
                   'text-3xs font-mono font-bold px-2 py-0.5 rounded-full border shadow-2xs inline-flex items-center gap-1',
                   product.productType === 'TRADING' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                   product.productType === 'PROJECT' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' :
+                  product.productType === 'SERVICE' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                   'bg-emerald-50 text-emerald-700 border-emerald-200'
                 ]"
               >
-                <AppIcon :name="product.productType === 'TRADING' ? 'shopping-bag' : product.productType === 'PROJECT' ? 'layers' : 'cpu'" size="xs" />
+                <AppIcon :name="product.productType === 'TRADING' ? 'shopping-bag' : product.productType === 'PROJECT' ? 'layers' : product.productType === 'SERVICE' ? 'tool' : 'cpu'" size="xs" />
                 <span>{{ (product.productType === 'RND' ? 'MANUFACTURE' : product.productType) || 'MANUFACTURE' }} PRODUCT</span>
               </span>
               <span class="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
@@ -84,21 +85,21 @@
           <span>Master Profile</span>
         </button>
 
-        <!-- Dynamic Tab for TRADING PRODUCTS -->
+        <!-- Dynamic Tab for TRADING & SERVICE PRODUCTS -->
         <button
-          v-if="isTrading"
+          v-if="isTrading || isService"
           @click="activeTab = 'commercial'"
           :class="[
             'pb-2 font-semibold border-b-2 transition-all flex items-center gap-1.5',
             activeTab === 'commercial'
-              ? 'border-purple-600 text-purple-600 font-bold'
+              ? (isService ? 'border-amber-600 text-amber-600 font-bold' : 'border-purple-600 text-purple-600 font-bold')
               : 'border-transparent text-slate-500 hover:text-slate-800'
           ]"
         >
-          <AppIcon name="shopping-bag" size="xs" />
-          <span>Commercial & Sourcing</span>
-          <span class="text-3xs font-mono px-1.5 py-0.2 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-            Terms
+          <AppIcon :name="isService ? 'tool' : 'shopping-bag'" size="xs" />
+          <span>{{ isService ? 'Service & Maintenance Terms' : 'Commercial & Sourcing' }}</span>
+          <span class="text-3xs font-mono px-1.5 py-0.2 rounded-full" :class="isService ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-purple-50 text-purple-700 border border-purple-200'">
+            {{ isService ? 'Rates' : 'Terms' }}
           </span>
         </button>
 
@@ -164,9 +165,11 @@
                     'text-3xs font-mono font-bold px-2 py-0.5 rounded-full border shadow-2xs inline-flex items-center gap-1',
                     product.productType === 'TRADING' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                     product.productType === 'PROJECT' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' :
+                    product.productType === 'SERVICE' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                     'bg-emerald-50 text-emerald-700 border-emerald-200'
                   ]"
                 >
+                  <AppIcon :name="product.productType === 'TRADING' ? 'shopping-bag' : product.productType === 'PROJECT' ? 'layers' : product.productType === 'SERVICE' ? 'tool' : 'cpu'" size="xs" />
                   {{ (product.productType === 'RND' ? 'MANUFACTURE' : product.productType) || 'MANUFACTURE' }} PRODUCT
                 </span>
               </div>
@@ -325,6 +328,18 @@
             </button>
           </div>
 
+          <div v-else-if="isService" class="space-y-3 text-xs">
+            <div class="p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <div class="font-bold text-amber-900">Customer Equipment Service</div>
+              <p class="text-3xs text-amber-700 mt-1 leading-relaxed">
+                Customer-owned equipment received for engineering service, maintenance, calibration, repair, or overhaul.
+              </p>
+            </div>
+            <button @click="activeTab = 'commercial'" class="btn btn-secondary w-full text-xs">
+              View Service Terms & Rates
+            </button>
+          </div>
+
           <!-- PROJECT COST ROLLUP CARD -->
           <div v-else-if="isProject" class="space-y-3 text-xs">
             <div class="p-3 bg-cyan-50 rounded-lg border border-cyan-200">
@@ -414,8 +429,8 @@
       </div>
     </div>
 
-    <!-- TAB 2: TRADING COMMERCIAL SOURCING TAB (FOR TRADING) -->
-    <div v-else-if="activeTab === 'commercial' && isTrading">
+    <!-- TAB 2: TRADING / SERVICE COMMERCIAL SOURCING TAB -->
+    <div v-else-if="activeTab === 'commercial' && (isTrading || isService)">
       <TradingCommercialTab :productId="product.id || product.code" />
     </div>
 
@@ -524,6 +539,9 @@ export default {
     isTrading() {
       return this.productType === 'TRADING';
     },
+    isService() {
+      return this.productType === 'SERVICE';
+    },
     isProject() {
       return this.productType === 'PROJECT';
     },
@@ -593,14 +611,14 @@ export default {
       // Ensure activeTab is valid for current product type
       if (this.activeTab === 'structure' && !this.isProject) {
         this.activeTab = 'master';
-      } else if (this.activeTab === 'commercial' && !this.isTrading) {
+      } else if (this.activeTab === 'commercial' && !(this.isTrading || this.isService)) {
         this.activeTab = 'master';
       } else if (this.activeTab === 'lifecycle' && !this.isManufacture) {
         this.activeTab = 'master';
       }
 
       if (this.product) {
-        if (this.isTrading) {
+        if (this.isTrading || this.isService) {
           await this.store.fetchTradingDetail(this.product.id);
         } else if (this.isProject) {
           await Promise.all([
@@ -633,7 +651,7 @@ export default {
     productType() {
       if (this.activeTab === 'structure' && !this.isProject) {
         this.activeTab = 'master';
-      } else if (this.activeTab === 'commercial' && !this.isTrading) {
+      } else if (this.activeTab === 'commercial' && !(this.isTrading || this.isService)) {
         this.activeTab = 'master';
       } else if (this.activeTab === 'lifecycle' && !this.isManufacture) {
         this.activeTab = 'master';

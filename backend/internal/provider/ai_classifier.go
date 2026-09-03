@@ -74,7 +74,7 @@ func (h *HeuristicRuleAIClassifier) SuggestClassification(ctx context.Context, i
 		strings.Contains(nameLower, "konsumsi") || strings.Contains(nameLower, "kunjungan") ||
 		strings.Contains(catLower, "service") || strings.Contains(catLower, "jasa") {
 		out.ItemClassification = "SERVICE"
-		out.ProductType = ""
+		out.ProductType = "SERVICE"
 		out.SuggestedCategory = "Engineering Services"
 		out.SuggestedTargetTable = "service_items"
 		out.ConfidenceScore = 96.0

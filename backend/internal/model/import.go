@@ -146,7 +146,7 @@ type ImportStagedRow struct {
 	
 	// Item Classification & Product Archetype
 	ItemClassification string     `gorm:"size:32;default:'PRODUCT'" json:"itemClassification"` // PRODUCT, COMPONENT, SERVICE, etc.
-	ProductType        string     `gorm:"size:32;default:'TRADING'" json:"productType"`        // TRADING, PROJECT, MANUFACTURE (when PRODUCT)
+	ProductType        string     `gorm:"size:32;default:'TRADING'" json:"productType"`        // TRADING, PROJECT, MANUFACTURE, SERVICE (when PRODUCT)
 	TargetEntity       string     `gorm:"size:64;default:'products'" json:"targetEntity"`      // products, components, service_items
 	
 	// Validation Diagnostics

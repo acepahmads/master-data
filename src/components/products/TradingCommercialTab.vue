@@ -1,26 +1,37 @@
 <template>
   <div class="space-y-6">
     <!-- Header Banner -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-purple-50 border border-purple-200">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border"
+      :class="isService ? 'bg-amber-50 border-amber-200' : 'bg-purple-50 border-purple-200'"
+    >
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
-          <AppIcon name="shopping-bag" size="sm" />
+        <div
+          class="w-10 h-10 rounded-lg text-white flex items-center justify-center shadow-xs"
+          :class="isService ? 'bg-amber-600' : 'bg-purple-600'"
+        >
+          <AppIcon :name="isService ? 'tool' : 'shopping-bag'" size="sm" />
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h2 class="text-sm font-bold text-purple-950">Trading Commercial & Sourcing Master</h2>
-            <span class="text-3xs font-mono font-bold px-2 py-0.5 rounded-full bg-purple-200/70 text-purple-800">
-              TRADING PRODUCT
+            <h2 class="text-sm font-bold" :class="isService ? 'text-amber-950' : 'text-purple-950'">
+              {{ isService ? 'Service Commercial & Maintenance Master' : 'Trading Commercial & Sourcing Master' }}
+            </h2>
+            <span
+              class="text-3xs font-mono font-bold px-2 py-0.5 rounded-full"
+              :class="isService ? 'bg-amber-200/70 text-amber-800' : 'bg-purple-200/70 text-purple-800'"
+            >
+              {{ isService ? 'SERVICE PRODUCT' : 'TRADING PRODUCT' }}
             </span>
           </div>
-          <p class="text-xs text-purple-700 mt-0.5">
-            Procurement pricing, profit margin, cross-currency exchange conversion, and distributor lead times.
+          <p class="text-xs mt-0.5" :class="isService ? 'text-amber-700' : 'text-purple-700'">
+            {{ isService ? 'Customer servicing rates, base labor costs, turnaround times, and maintenance guarantees.' : 'Procurement pricing, profit margin, cross-currency exchange conversion, and distributor lead times.' }}
           </p>
         </div>
       </div>
       <button @click="openEditModal" class="btn btn-primary">
         <AppIcon name="edit" size="xs" class="mr-1.5 text-white" />
-        <span>Edit Commercial Terms</span>
+        <span>{{ isService ? 'Edit Service Terms' : 'Edit Commercial Terms' }}</span>
       </button>
     </div>
 
@@ -29,7 +40,7 @@
       <!-- 1. Purchase Cost -->
       <div class="app-card p-4 bg-white border-l-4 border-l-purple-500 shadow-2xs space-y-1.5">
         <div class="flex items-center justify-between">
-          <span class="text-3xs font-semibold uppercase tracking-wider text-slate-400">Purchase Cost</span>
+          <span class="text-3xs font-semibold uppercase tracking-wider text-slate-400">{{ isService ? 'Labor / Base Cost' : 'Purchase Cost' }}</span>
           <span class="text-3xs font-mono font-bold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
             {{ detail.purchaseCurrency || detail.currency || 'USD' }}
           </span>
@@ -45,7 +56,7 @@
       <!-- 2. Selling Price -->
       <div class="app-card p-4 bg-white border-l-4 border-l-emerald-500 shadow-2xs space-y-1.5">
         <div class="flex items-center justify-between">
-          <span class="text-3xs font-semibold uppercase tracking-wider text-slate-400">Selling Price (MSRP)</span>
+          <span class="text-3xs font-semibold uppercase tracking-wider text-slate-400">{{ isService ? 'Service Fee (Customer Rate)' : 'Selling Price (MSRP)' }}</span>
           <span class="text-3xs font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
             {{ detail.sellingCurrency || detail.purchaseCurrency || detail.currency || 'USD' }}
           </span>
@@ -379,6 +390,12 @@ export default {
   computed: {
     store() {
       return useMasterStore();
+    },
+    product() {
+      return this.store.products.find(p => p.id === this.productId || p.code === this.productId) || {};
+    },
+    isService() {
+      return this.product.productType === 'SERVICE';
     },
     detail() {
       return this.store.tradingDetails[this.productId] || {};

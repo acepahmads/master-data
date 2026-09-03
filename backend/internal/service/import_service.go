@@ -1283,8 +1283,8 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 					row.CreatedMasterID = existingProd.ID
 					createdProds++
 
-					// Upsert trading detail if TRADING product
-					if prodType == "TRADING" && (row.UnitCost > 0 || row.SellingPrice > 0) {
+					// Upsert trading/service detail if TRADING or SERVICE product
+					if (prodType == "TRADING" || prodType == "SERVICE") && (row.UnitCost > 0 || row.SellingPrice > 0) {
 						var tradingDetail model.TradingProductDetail
 						if err := tx.Unscoped().Where("product_id = ?", existingProd.ID).First(&tradingDetail).Error; err == nil {
 							tradingDetail.DeletedAt = gorm.DeletedAt{}
@@ -1337,8 +1337,8 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 					row.CreatedMasterID = newProd.ID
 					createdProds++
 
-					// If TRADING product, create TradingProductDetail with purchase & selling price
-					if prodType == "TRADING" && (row.UnitCost > 0 || row.SellingPrice > 0) {
+					// If TRADING or SERVICE product, create TradingProductDetail with purchase/base & selling/service price
+					if (prodType == "TRADING" || prodType == "SERVICE") && (row.UnitCost > 0 || row.SellingPrice > 0) {
 						newTrading := model.TradingProductDetail{
 							ID:               fmt.Sprintf("TRD-%s", uuid.New().String()[:8]),
 							ProductID:        newProd.ID,

@@ -30,13 +30,13 @@ export const platformFoundation = [
     id: "PF-01",
     title: "Product Master",
     code: "PLT-PRD",
-    scope: "Trading, Project & Manufacture Products",
+    scope: "Trading, Project, Manufacture & Service Products",
     status: "Complete",
     progress: 100,
     color: "blue",
     icon: "product",
-    description: "Centralized product portfolio registry managing all 3 product archetypes with unified taxonomy and lifecycle controls.",
-    highlights: ["Unified Product Registry", "3 Product Types Classification", "Dynamic Parametric Specs", "Lifecycle State Tracking"]
+    description: "Centralized product portfolio registry managing all 4 product archetypes with unified taxonomy and lifecycle controls.",
+    highlights: ["Unified Product Registry", "4 Product Types Classification", "Dynamic Parametric Specs", "Lifecycle State Tracking"]
   },
   {
     id: "PF-02",

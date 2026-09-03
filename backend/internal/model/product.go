@@ -11,6 +11,7 @@ const (
 	ProductTypeTrading     = "TRADING"
 	ProductTypeProject     = "PROJECT"
 	ProductTypeManufacture = "MANUFACTURE"
+	ProductTypeService     = "SERVICE"
 	ProductTypeRND         = "MANUFACTURE" // backward-compatibility alias
 )
 
@@ -25,7 +26,7 @@ type Product struct {
 	ID                string                `gorm:"primaryKey;size:64" json:"id"`
 	Code              string                `gorm:"size:64;uniqueIndex;not null" json:"code"`
 	Name              string                `gorm:"size:255;index;not null" json:"name"`
-	ProductType       string                `gorm:"size:32;default:'MANUFACTURE';index" json:"productType"` // TRADING, PROJECT, MANUFACTURE
+	ProductType       string                `gorm:"size:32;default:'MANUFACTURE';index" json:"productType"` // TRADING, PROJECT, MANUFACTURE, SERVICE
 	Category          string                `gorm:"size:100;index" json:"category"`
 	CategoryID        *string               `gorm:"size:64;index" json:"categoryId"`
 	Status            string                `gorm:"size:32;default:'Active';index" json:"status"`

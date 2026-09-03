@@ -64,7 +64,7 @@ func (s *ProductService) GetByID(id string) (*model.Product, error) {
 	if err != nil {
 		return nil, err
 	}
-	if prod.ProductType == model.ProductTypeTrading && prod.TradingDetail == nil && s.tradingRepo != nil {
+	if (prod.ProductType == model.ProductTypeTrading || prod.ProductType == model.ProductTypeService) && prod.TradingDetail == nil && s.tradingRepo != nil {
 		detail, _ := s.tradingRepo.FindByProductID(prod.ID)
 		prod.TradingDetail = detail
 	}
@@ -78,11 +78,18 @@ func (s *ProductService) PopulatePriceSummaries(prod *model.Product) {
 	}
 
 	switch prod.ProductType {
-	case model.ProductTypeTrading:
+	case model.ProductTypeTrading, model.ProductTypeService:
 		detail := prod.TradingDetail
 		if detail == nil && s.tradingRepo != nil {
 			detail, _ = s.tradingRepo.FindByProductID(prod.ID)
 			prod.TradingDetail = detail
+		}
+
+		costLabel := "Purchase Cost"
+		sellLabel := "Commercial Price"
+		if prod.ProductType == model.ProductTypeService {
+			costLabel = "Labor / Base Cost"
+			sellLabel = "Service Fee"
 		}
 
 		if detail != nil && detail.PurchasePrice > 0 {
@@ -103,25 +110,18 @@ func (s *ProductService) PopulatePriceSummaries(prod *model.Product) {
 				costIDR = &val
 			}
 
-			marginVal := detail.ProfitMarginPercentage
-			effRate := detail.EffectiveExchangeRate
-			rateMode := detail.ExchangeRateMode
-
 			prod.CostSummary = &model.PriceSummary{
-				Amount:       detail.PurchasePrice,
-				Currency:     pCur,
-				AmountInIDR:  costIDR,
-				Label:        "Purchase Cost",
-				Available:    true,
-				Margin:       &marginVal,
-				RateMode:     rateMode,
-				ExchangeRate: &effRate,
+				Amount:      detail.PurchasePrice,
+				Currency:    pCur,
+				AmountInIDR: costIDR,
+				Label:       costLabel,
+				Available:   true,
 			}
 		} else {
 			prod.CostSummary = &model.PriceSummary{
 				Amount:    0,
 				Currency:  "USD",
-				Label:     "No Purchase Cost",
+				Label:     costLabel,
 				Available: false,
 			}
 		}
@@ -155,7 +155,7 @@ func (s *ProductService) PopulatePriceSummaries(prod *model.Product) {
 				Amount:       detail.SellingPrice,
 				Currency:     sCur,
 				AmountInIDR:  sellIDR,
-				Label:        "Commercial Price",
+				Label:        sellLabel,
 				Available:    true,
 				Margin:       &marginVal,
 				RateMode:     rateMode,
@@ -165,7 +165,7 @@ func (s *ProductService) PopulatePriceSummaries(prod *model.Product) {
 			prod.SellingPriceSummary = &model.PriceSummary{
 				Amount:    0,
 				Currency:  "USD",
-				Label:     "Not Calculated",
+				Label:     sellLabel,
 				Available: false,
 			}
 		}
@@ -315,6 +315,8 @@ func (s *ProductService) Create(p *model.Product, currentUser *model.User) (*mod
 			prefix = "PRD-TRD"
 		} else if p.ProductType == model.ProductTypeProject {
 			prefix = "PRD-PRJ"
+		} else if p.ProductType == model.ProductTypeService {
+			prefix = "PRD-SRV"
 		}
 		p.Code = fmt.Sprintf("%s-2024-%03d", prefix, count+1)
 	}
@@ -348,8 +350,8 @@ func (s *ProductService) Create(p *model.Product, currentUser *model.User) (*mod
 		return nil, err
 	}
 
-	// If Trading Detail was provided during creation
-	if p.ProductType == model.ProductTypeTrading && p.TradingDetail != nil && s.tradingRepo != nil {
+	// If Trading / Service Detail was provided during creation
+	if (p.ProductType == model.ProductTypeTrading || p.ProductType == model.ProductTypeService) && p.TradingDetail != nil && s.tradingRepo != nil {
 		p.TradingDetail.ID = fmt.Sprintf("TRD-DET-%d", time.Now().UnixNano()%100000)
 		p.TradingDetail.ProductID = p.ID
 		if s.rateService != nil {
@@ -517,8 +519,8 @@ func (s *ProductService) GetTradingDetail(productID string) (*model.TradingProdu
 	if err != nil {
 		return nil, errors.New("product not found")
 	}
-	if prod.ProductType != model.ProductTypeTrading {
-		return nil, errors.New("product is not a TRADING product")
+	if prod.ProductType != model.ProductTypeTrading && prod.ProductType != model.ProductTypeService {
+		return nil, errors.New("product is not a TRADING or SERVICE product")
 	}
 	return s.tradingRepo.FindByProductID(prod.ID)
 }
@@ -528,8 +530,8 @@ func (s *ProductService) UpdateTradingDetail(productID string, detail *model.Tra
 	if err != nil {
 		return nil, errors.New("product not found")
 	}
-	if prod.ProductType != model.ProductTypeTrading {
-		return nil, errors.New("product is not a TRADING product")
+	if prod.ProductType != model.ProductTypeTrading && prod.ProductType != model.ProductTypeService {
+		return nil, errors.New("product is not a TRADING or SERVICE product")
 	}
 
 	detail.ProductID = prod.ID
@@ -587,6 +589,8 @@ func normalizeProductType(t string) string {
 		return model.ProductTypeTrading
 	case "PROJECT", "SOLUTION", "SYSTEM":
 		return model.ProductTypeProject
+	case "SERVICE", "SERVICES", "JASA", "MAINTENANCE", "REPAIR", "CALIBRATION", "KALIBRASI":
+		return model.ProductTypeService
 	case "MANUFACTURE", "MANUFACTURING", "MANUFACTURED", "RND", "R&D", "ENGINEERING":
 		return model.ProductTypeManufacture
 	default:

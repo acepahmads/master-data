@@ -107,6 +107,7 @@
               <option value="TRADING">TRADING (Commercial Sourced)</option>
               <option value="PROJECT">PROJECT (Turnkey Solution)</option>
               <option value="MANUFACTURE">MANUFACTURE (In-House Manufactured)</option>
+              <option value="SERVICE">SERVICE (Customer Equipment Service)</option>
             </select>
           </div>
         </div>

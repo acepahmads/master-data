@@ -537,7 +537,7 @@ func (s *BOMService) computeProjectItemCost(item *model.ProjectItem) float64 {
 		if err != nil || refProd == nil {
 			return 0
 		}
-		if refProd.ProductType == model.ProductTypeTrading {
+		if refProd.ProductType == model.ProductTypeTrading || refProd.ProductType == model.ProductTypeService {
 			detail, _ := s.tradingRepo.FindByProductID(refProd.ID)
 			if detail != nil {
 				return math.Round((item.Quantity*detail.PurchasePrice)*100) / 100
