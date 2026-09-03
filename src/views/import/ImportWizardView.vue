@@ -476,9 +476,8 @@ export default {
         map[f.id] = {};
         const manifest = this.parseManifest(f.sheetManifestJson);
         for (const s of manifest) {
-          // AI Smart Recommendation: select sheets with real data rows, leave blank sheets unchecked
-          const isCandidate = (s.rowCount > 1 && s.sampleRows && s.sampleRows.length > 0);
-          map[f.id][s.name] = isCandidate;
+          // Default unchecklist di awal: user yang pilih dan cek dulu datanya
+          map[f.id][s.name] = false;
           if (this.headerRowOverrides[s.name] === undefined) {
             headerMap[s.name] = s.headerRowIndex || 1;
           }
@@ -488,8 +487,8 @@ export default {
       this.headerRowOverrides = { ...this.headerRowOverrides, ...headerMap };
     },
     isSheetSelected(fileId, sheetName) {
-      if (!this.selectedSheetsMap[fileId]) return true;
-      return this.selectedSheetsMap[fileId][sheetName] !== false;
+      if (!this.selectedSheetsMap[fileId]) return false;
+      return !!this.selectedSheetsMap[fileId][sheetName];
     },
     toggleSheet(fileId, sheetName) {
       if (!this.selectedSheetsMap[fileId]) {
