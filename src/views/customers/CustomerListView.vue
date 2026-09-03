@@ -137,7 +137,8 @@
             <tr
               v-for="c in filteredCustomers"
               :key="c.id"
-              class="hover:bg-slate-50/70 transition-colors group"
+              @click="openViewModal(c)"
+              class="hover:bg-slate-50/70 transition-colors group cursor-pointer"
             >
               <!-- Code -->
               <td class="whitespace-nowrap font-mono text-2xs font-bold text-slate-600">
@@ -231,6 +232,13 @@
               <td class="text-right whitespace-nowrap">
                 <div class="flex items-center justify-end gap-1">
                   <button
+                    @click.stop="openViewModal(c)"
+                    class="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-brand-600 transition-colors"
+                    title="View Customer Profile"
+                  >
+                    <AppIcon name="eye" size="xs" />
+                  </button>
+                  <button
                     @click.stop="openEditModal(c)"
                     class="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-brand-600 transition-colors"
                     title="Edit Customer"
@@ -254,7 +262,7 @@
 
     <!-- Modal Form: Add / Edit Customer -->
     <BaseModal
-      :isOpen="isModalOpen"
+      :show="isModalOpen"
       :title="isEditMode ? 'Edit Customer' : 'Add New Customer'"
       @close="closeModal"
     >
@@ -357,7 +365,7 @@
 
     <!-- Confirm Delete Modal -->
     <BaseModal
-      :isOpen="isDeleteModalOpen"
+      :show="isDeleteModalOpen"
       title="Delete Customer"
       @close="isDeleteModalOpen = false"
     >
@@ -373,6 +381,160 @@
           </button>
           <button type="button" @click="handleDelete" class="btn btn-danger">
             Delete Customer
+          </button>
+        </div>
+      </div>
+    </BaseModal>
+
+    <!-- Modal: View Customer Profile Details -->
+    <BaseModal
+      :show="isViewModalOpen"
+      title="Customer Profile Details"
+      maxWidth="lg"
+      @close="closeViewModal"
+    >
+      <div v-if="customerToView" class="space-y-5 text-xs">
+        <!-- Profile Header Banner -->
+        <div class="flex items-start justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-base shadow-xs uppercase">
+              {{ getInitials(customerToView.name || customerToView.company) }}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-slate-900">{{ customerToView.name || customerToView.company }}</h3>
+                <span
+                  class="text-3xs font-semibold px-2 py-0.5 rounded-full border"
+                  :class="[
+                    customerToView.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    customerToView.status === 'Lead' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    'bg-slate-100 text-slate-600 border-slate-200'
+                  ]"
+                >
+                  {{ customerToView.status || 'Active' }}
+                </span>
+              </div>
+              <div v-if="customerToView.company" class="flex items-center gap-1.5 text-slate-600 mt-0.5 font-medium">
+                <AppIcon name="briefcase" size="2xs" class="text-slate-400" />
+                <span>{{ customerToView.company }}</span>
+              </div>
+            </div>
+          </div>
+
+          <span
+            v-if="customerToView.source === 'IMPORT_XLS'"
+            class="text-3xs font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 inline-flex items-center gap-1 shrink-0"
+          >
+            <AppIcon name="file-text" size="2xs" />
+            <span>IMPORT XLS</span>
+          </span>
+          <span
+            v-else
+            class="text-3xs font-mono font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shrink-0"
+          >
+            MANUAL
+          </span>
+        </div>
+
+        <!-- Quick Contact Action Buttons -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <!-- Call Phone -->
+          <a
+            :href="customerToView.phone ? `tel:${customerToView.phone}` : '#'"
+            :class="[
+              'flex items-center justify-center gap-2 py-2 px-3 rounded-lg border font-medium transition-all text-xs',
+              customerToView.phone
+                ? 'bg-blue-50/60 border-blue-200 text-blue-700 hover:bg-blue-100/60'
+                : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
+            ]"
+          >
+            <AppIcon name="phone" size="xs" />
+            <span>{{ customerToView.phone ? 'Call Phone' : 'No Phone' }}</span>
+          </a>
+
+          <!-- WhatsApp Chat -->
+          <a
+            :href="getWhatsAppLink(customerToView.phone)"
+            target="_blank"
+            rel="noopener noreferrer"
+            :class="[
+              'flex items-center justify-center gap-2 py-2 px-3 rounded-lg border font-medium transition-all text-xs',
+              customerToView.phone
+                ? 'bg-emerald-50/60 border-emerald-200 text-emerald-700 hover:bg-emerald-100/60'
+                : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
+            ]"
+          >
+            <AppIcon name="message-square" size="xs" />
+            <span>WhatsApp Chat</span>
+          </a>
+
+          <!-- Send Email -->
+          <a
+            :href="customerToView.email ? `mailto:${customerToView.email}` : '#'"
+            :class="[
+              'flex items-center justify-center gap-2 py-2 px-3 rounded-lg border font-medium transition-all text-xs',
+              customerToView.email
+                ? 'bg-purple-50/60 border-purple-200 text-purple-700 hover:bg-purple-100/60'
+                : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
+            ]"
+          >
+            <AppIcon name="mail" size="xs" />
+            <span>{{ customerToView.email ? 'Send Email' : 'No Email' }}</span>
+          </a>
+        </div>
+
+        <!-- Detail Information Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-3.5 bg-white rounded-lg border border-slate-200 font-sans">
+          <div>
+            <span class="text-3xs uppercase tracking-wider font-semibold text-slate-400">Customer Code</span>
+            <div class="font-mono font-bold text-slate-800 mt-0.5">{{ customerToView.code || customerToView.id }}</div>
+          </div>
+          <div>
+            <span class="text-3xs uppercase tracking-wider font-semibold text-slate-400">Company Name</span>
+            <div class="font-medium text-slate-800 mt-0.5">{{ customerToView.company || '—' }}</div>
+          </div>
+          <div>
+            <span class="text-3xs uppercase tracking-wider font-semibold text-slate-400">Phone / WhatsApp</span>
+            <div class="font-mono text-slate-800 mt-0.5">{{ customerToView.phone || '—' }}</div>
+          </div>
+          <div>
+            <span class="text-3xs uppercase tracking-wider font-semibold text-slate-400">Email Address</span>
+            <div class="font-mono text-slate-800 mt-0.5">{{ customerToView.email || '—' }}</div>
+          </div>
+          <div>
+            <span class="text-3xs uppercase tracking-wider font-semibold text-slate-400">Registered On</span>
+            <div class="font-mono text-slate-600 mt-0.5">{{ formatDate(customerToView.createdAt) }}</div>
+          </div>
+          <div>
+            <span class="text-3xs uppercase tracking-wider font-semibold text-slate-400">Last Updated</span>
+            <div class="font-mono text-slate-600 mt-0.5">{{ formatDate(customerToView.updatedAt) }}</div>
+          </div>
+        </div>
+
+        <!-- Description / Remarks / Address -->
+        <div class="space-y-1">
+          <span class="text-3xs uppercase tracking-wider font-semibold text-slate-400">Description, Address & Import Quotation Reference</span>
+          <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 leading-relaxed whitespace-pre-line text-xs">
+            {{ customerToView.descr || 'No additional description, quotation details, or remarks entered.' }}
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            @click="switchToEditFromView"
+            class="btn btn-primary text-xs flex items-center gap-1.5"
+          >
+            <AppIcon name="edit" size="xs" />
+            <span>Edit This Customer</span>
+          </button>
+          <button
+            type="button"
+            @click="closeViewModal"
+            class="btn btn-secondary text-xs"
+          >
+            Close
           </button>
         </div>
       </div>
@@ -402,7 +564,9 @@ export default {
       isEditMode: false,
       isSaving: false,
       isDeleteModalOpen: false,
+      isViewModalOpen: false,
       customerToDelete: null,
+      customerToView: null,
       form: {
         id: '',
         code: '',
@@ -515,6 +679,38 @@ export default {
       } catch (err) {
         console.error('Failed to delete customer:', err);
       }
+    },
+    openViewModal(customer) {
+      this.customerToView = customer;
+      this.isViewModalOpen = true;
+    },
+    closeViewModal() {
+      this.isViewModalOpen = false;
+      this.customerToView = null;
+    },
+    switchToEditFromView() {
+      const c = this.customerToView;
+      this.closeViewModal();
+      if (c) {
+        this.openEditModal(c);
+      }
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '—';
+      try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        return dateStr;
+      }
+    },
+    getWhatsAppLink(phone) {
+      if (!phone) return '#';
+      let clean = phone.replace(/[^0-9]/g, '');
+      if (clean.startsWith('0')) {
+        clean = '62' + clean.slice(1);
+      }
+      return `https://wa.me/${clean}`;
     }
   }
 };
