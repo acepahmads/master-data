@@ -152,9 +152,10 @@
               <th class="py-2.5 px-2.5 min-w-[180px] lg:min-w-[210px]">Component Details</th>
               <th class="py-2.5 px-2.5 whitespace-nowrap w-28">Category</th>
               <th class="py-2.5 px-2.5 whitespace-nowrap w-36">Manufacturer / Sourcing</th>
+              <th class="py-2.5 px-2.5 whitespace-nowrap w-28">Purchase Cost</th>
               <th class="py-2.5 px-2.5 whitespace-nowrap w-16 text-center">UoM</th>
               <th class="py-2.5 px-2.5 whitespace-nowrap w-24">Status</th>
-              <th class="py-2.5 px-2.5 whitespace-nowrap w-20 text-right">Actions</th>
+              <th class="py-2.5 px-2.5 whitespace-nowrap w-24 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 bg-white">
@@ -217,6 +218,19 @@
                   Dist: <span class="text-slate-600">{{ c.supplier || 'Direct' }}</span>
                 </div>
               </td>
+              <!-- Purchase Cost & Link -->
+              <td class="py-2 px-2.5 whitespace-nowrap">
+                <div v-if="c.estimatedUnitCost > 0" class="space-y-0.5">
+                  <div class="font-mono font-bold text-xs text-slate-900">
+                    {{ formatCurrency(c.estimatedUnitCost, c.currency) }}
+                  </div>
+                  <div class="text-3xs text-slate-400 font-mono">
+                    Per {{ c.unit || 'pcs' }}
+                  </div>
+                </div>
+                <div v-else class="text-slate-300 font-mono text-xs">—</div>
+              </td>
+
               <td class="py-2 px-2.5 whitespace-nowrap text-center">
                 <span class="font-mono font-bold text-3xs text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
                   {{ c.unit || 'pcs' }}
@@ -227,6 +241,17 @@
               </td>
               <td class="py-2 px-2.5 whitespace-nowrap text-right" @click.stop>
                 <div class="flex items-center justify-end gap-1">
+                  <a
+                    v-if="c.purchaseLink"
+                    :href="c.purchaseLink"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    @click.stop
+                    class="btn-icon text-brand-600 hover:text-brand-800 hover:bg-brand-50"
+                    title="Open Purchase Link"
+                  >
+                    <AppIcon name="shopping-bag" size="xs" />
+                  </a>
                   <router-link
                     :to="`/components/${c.id || c.partNumber}`"
                     class="btn-icon"
@@ -583,6 +608,24 @@ export default {
     }
   },
   methods: {
+    formatCurrency(amount, currency) {
+      if (amount === null || amount === undefined || amount === 0) return '—';
+      const curr = (currency || 'IDR').toUpperCase();
+      if (curr === 'IDR') {
+        return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(amount);
+      }
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: curr,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount);
+    },
     formatTimestamp(ts) {
       if (!ts) return 'Recent';
       if (ts.length > 10) return ts.substring(0, 10);

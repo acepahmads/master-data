@@ -31,6 +31,7 @@ type Component struct {
 	EstimatedUnitCost   float64                  `gorm:"type:decimal(12,4);default:0.0000" json:"estimatedUnitCost"`
 	Currency            string                   `gorm:"size:8;default:'USD'" json:"currency"`
 	CostSource          string                   `gorm:"size:64;default:'MANUAL_ESTIMATE'" json:"costSource"`
+	PurchaseLink        string                   `gorm:"size:1024" json:"purchaseLink"`
 	ShortDescription    string                   `gorm:"type:text" json:"shortDescription"`
 	DetailedDescription string                   `gorm:"type:text" json:"detailedDescription"`
 	Status              string                   `gorm:"size:32;default:'Active';index" json:"status"`

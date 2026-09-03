@@ -139,6 +139,60 @@
               <option value="Chassis Mount">Chassis Mount</option>
             </select>
           </div>
+
+          <!-- Purchase Price (Harga Beli) -->
+          <div>
+            <label class="form-label flex items-center justify-between">
+              <span>Purchase Price (Harga Beli)</span>
+              <span class="text-3xs text-slate-400 font-mono">Per Unit / UoM</span>
+            </label>
+            <div class="grid grid-cols-5 gap-2">
+              <input
+                v-model.number="form.estimatedUnitCost"
+                type="number"
+                step="any"
+                min="0"
+                placeholder="0.00"
+                class="form-input col-span-3 font-mono font-bold text-xs"
+              />
+              <select v-model="form.currency" class="form-select col-span-2 font-mono text-xs">
+                <option value="IDR">IDR (Rp)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="SGD">SGD ($)</option>
+                <option value="CNY">CNY (¥)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Purchase Link (Link Pembelian) -->
+          <div>
+            <label class="form-label flex items-center justify-between">
+              <span>Purchase Link (Link Pembelian)</span>
+              <a
+                v-if="form.purchaseLink"
+                :href="form.purchaseLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-3xs text-brand-600 hover:text-brand-800 font-bold flex items-center gap-0.5"
+                title="Test open purchase link"
+              >
+                <span>Test Link</span>
+                <AppIcon name="external-link" size="2xs" />
+              </a>
+            </label>
+            <div class="relative">
+              <input
+                v-model="form.purchaseLink"
+                type="url"
+                placeholder="e.g. https://www.digikey.com/... or Tokopedia / Shopee link"
+                class="form-input text-xs pr-8"
+              />
+              <span class="absolute right-2.5 top-2.5 text-slate-400">
+                <AppIcon name="shopping-bag" size="xs" />
+              </span>
+            </div>
+          </div>
         </div>
 
         <!-- Compliance Toggles -->
@@ -364,6 +418,9 @@ export default {
         status: 'Active',
         packageType: '',
         mountingType: 'Surface Mount (SMD)',
+        estimatedUnitCost: 0,
+        currency: 'IDR',
+        purchaseLink: '',
         rohsCompliant: true,
         reachCompliant: true,
         shortDescription: '',

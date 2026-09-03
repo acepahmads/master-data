@@ -119,6 +119,9 @@ func (s *ComponentService) Update(id string, c *model.Component, currentUser *mo
 	existing.LeadTime = c.LeadTime
 	existing.RoHSCompliant = c.RoHSCompliant
 	existing.REACHCompliant = c.REACHCompliant
+	existing.EstimatedUnitCost = c.EstimatedUnitCost
+	existing.Currency = c.Currency
+	existing.PurchaseLink = c.PurchaseLink
 	existing.ShortDescription = c.ShortDescription
 	existing.DetailedDescription = c.DetailedDescription
 	existing.Status = c.Status

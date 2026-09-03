@@ -127,6 +127,28 @@
               <div class="text-3xs font-semibold uppercase tracking-wider text-slate-400">Mounting Type</div>
               <div class="text-slate-800 font-medium mt-0.5">{{ component.mountingType || 'Surface Mount' }}</div>
             </div>
+            <div>
+              <div class="text-3xs font-semibold uppercase tracking-wider text-slate-400">Purchase Cost (Harga Beli)</div>
+              <div class="font-mono font-bold text-slate-900 mt-0.5 text-sm">
+                {{ formatCurrency(component.estimatedUnitCost, component.currency) }}
+              </div>
+            </div>
+            <div>
+              <div class="text-3xs font-semibold uppercase tracking-wider text-slate-400">Purchase Link (Link Pembelian)</div>
+              <div class="mt-0.5">
+                <a
+                  v-if="component.purchaseLink"
+                  :href="component.purchaseLink"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1.5 text-brand-600 hover:text-brand-800 font-bold hover:underline"
+                >
+                  <AppIcon name="external-link" size="2xs" />
+                  <span class="truncate max-w-[200px]">Open Purchase Link</span>
+                </a>
+                <span v-else class="text-slate-400 text-3xs italic">No Link Provided</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -392,6 +414,24 @@ export default {
     }
   },
   methods: {
+    formatCurrency(amount, currency) {
+      if (amount === null || amount === undefined || amount === 0) return '—';
+      const curr = (currency || 'IDR').toUpperCase();
+      if (curr === 'IDR') {
+        return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(amount);
+      }
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: curr,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount);
+    },
     confirmDelete() {
       this.deleteModalOpen = true;
     },
