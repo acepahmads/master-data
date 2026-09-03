@@ -24,6 +24,7 @@ type RouterDependencies struct {
 	CompHandler     *handler.ComponentHandler
 	CategoryHandler *handler.CategoryHandler
 	PartnerHandler  *handler.PartnerHandler
+	CustomerHandler *handler.CustomerHandler
 	UnitHandler     *handler.UnitHandler
 	UserHandler     *handler.UserHandler
 	RoleHandler     *handler.RoleHandler
@@ -324,6 +325,16 @@ func SetupRouter(deps *RouterDependencies) *gin.Engine {
 				suppliers.POST("", middleware.RequirePermission("suppliers.create"), deps.PartnerHandler.CreateSupplier)
 				suppliers.PUT("/:id", middleware.RequirePermission("suppliers.edit"), deps.PartnerHandler.UpdateSupplier)
 				suppliers.DELETE("/:id", middleware.RequirePermission("suppliers.delete"), deps.PartnerHandler.DeleteSupplier)
+			}
+
+			// Customers
+			customers := protected.Group("/customers")
+			{
+				customers.GET("", deps.CustomerHandler.GetAll)
+				customers.GET("/:id", deps.CustomerHandler.GetByID)
+				customers.POST("", deps.CustomerHandler.Create)
+				customers.PUT("/:id", deps.CustomerHandler.Update)
+				customers.DELETE("/:id", deps.CustomerHandler.Delete)
 			}
 
 			// Units

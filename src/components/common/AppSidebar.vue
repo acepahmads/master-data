@@ -188,6 +188,22 @@
             </span>
           </router-link>
 
+          <!-- Customers -->
+          <router-link
+            to="/customers"
+            active-class="bg-brand-500/15 text-brand-300 font-semibold border-l-2 border-brand-500 shadow-sm"
+            class="flex items-center justify-between px-2.5 py-2 rounded-md text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all duration-150 group"
+            :title="collapsed ? 'Customers' : ''"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <AppIcon name="users" size="sm" class="text-slate-400 group-hover:text-white group-[.bg-brand-500\/15]:text-brand-400 transition-colors" />
+              <span v-if="!collapsed" class="truncate">Customers</span>
+            </div>
+            <span v-if="!collapsed" class="text-3xs font-mono px-1.5 py-0.5 rounded bg-slate-800/90 text-slate-400 border border-slate-700/50 group-[.bg-brand-500\/15]:bg-brand-950 group-[.bg-brand-500\/15]:text-brand-300 group-[.bg-brand-500\/15]:border-brand-700/60">
+              {{ store.totalCustomersCount }}
+            </span>
+          </router-link>
+
           <!-- Units of Measure -->
           <router-link
             to="/units"
@@ -602,7 +618,7 @@ export default {
     syncExpandedGroups(path) {
       if (!path) path = this.$route ? this.$route.path : '/';
 
-      this.masterDataExpanded = /^\/(products|components|categories|manufacturers|suppliers|units|data-import)/.test(path);
+      this.masterDataExpanded = /^\/(products|components|categories|manufacturers|suppliers|customers|units|data-import)/.test(path);
       this.lifecycleExpanded = /^\/(versions|revisions)/.test(path);
       this.prototypeExpanded = /^\/prototypes/.test(path);
       this.testingExpanded = /^\/(testing|test-plans|test-sessions|findings)/.test(path);

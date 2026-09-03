@@ -6,6 +6,7 @@ import componentsApi from '@/api/components';
 import categoriesApi from '@/api/categories';
 import manufacturersApi from '@/api/manufacturers';
 import suppliersApi from '@/api/suppliers';
+import customersApi from '@/api/customers';
 import unitsApi from '@/api/units';
 import usersApi from '@/api/users';
 import rolesApi from '@/api/roles';
@@ -69,6 +70,7 @@ export const useMasterStore = defineStore('master', {
     flatCategoryList: [],
     manufacturers: [],
     suppliers: [],
+    customers: [],
     units: [],
     users: [],
     roles: [],
@@ -97,6 +99,7 @@ export const useMasterStore = defineStore('master', {
     },
     totalManufacturersCount: (state) => state.manufacturers.length,
     totalSuppliersCount: (state) => state.suppliers.length,
+    totalCustomersCount: (state) => state.customers.length,
     totalUnitsCount: (state) => state.units.length,
     totalUsersCount: (state) => state.users.length,
 
@@ -667,6 +670,46 @@ export const useMasterStore = defineStore('master', {
         await suppliersApi.delete(id);
         this.suppliers = this.suppliers.filter(item => item.id !== id);
         this.showToast('Supplier Deleted', 'Supplier removed.', 'warning');
+      } catch (err) {
+        this.showToast('Delete Failed', err.message, 'error');
+      }
+    },
+
+    // CUSTOMERS CRUD
+    async fetchCustomers(params = {}) {
+      try {
+        const res = await customersApi.getAll({ limit: 100, ...params });
+        if (res && res.data) {
+          this.customers = res.data;
+        }
+      } catch (err) {
+        console.error('[MasterStore] fetchCustomers error:', err);
+      }
+    },
+
+    async saveCustomer(customerData) {
+      try {
+        const isEdit = Boolean(customerData.id && this.customers.some(c => c.id === customerData.id));
+        if (isEdit) {
+          await customersApi.update(customerData.id, customerData);
+          this.showToast('Customer Updated', `${customerData.name || customerData.company} updated.`);
+        } else {
+          await customersApi.create(customerData);
+          this.showToast('Customer Added', `${customerData.name || customerData.company} created.`);
+        }
+        await this.fetchCustomers();
+        await this.fetchActivities();
+      } catch (err) {
+        this.showToast('Save Failed', err.message, 'error');
+        throw err;
+      }
+    },
+
+    async deleteCustomer(id) {
+      try {
+        await customersApi.delete(id);
+        this.customers = this.customers.filter(item => item.id !== id);
+        this.showToast('Customer Deleted', 'Customer removed.', 'warning');
       } catch (err) {
         this.showToast('Delete Failed', err.message, 'error');
       }

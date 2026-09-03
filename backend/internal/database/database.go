@@ -68,6 +68,7 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		&model.ComponentCategory{},
 		&model.Manufacturer{},
 		&model.Supplier{},
+		&model.Customer{},
 		&model.Unit{},
 		&model.Component{},
 		&model.ComponentSpecification{},

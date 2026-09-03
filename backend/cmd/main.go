@@ -73,6 +73,9 @@ func main() {
 	impRepo := repository.NewImportRepository(db)
 	aiClassifier := provider.NewHeuristicRuleAIClassifier()
 	importService := service.NewImportService(impRepo, productRepo, tradingRepo, compRepo, catRepo, mfgRepo, supplierRepo, activityRepo, aiClassifier, cfg)
+	customerRepo := repository.NewCustomerRepository(db)
+	customerService := service.NewCustomerService(customerRepo, activityRepo)
+	importService.SetCustomerService(customerService)
 
 	// 5. Initialize Handlers
 	authHandler := handler.NewAuthHandler(authService)
@@ -94,6 +97,7 @@ func main() {
 	testingHandler := handler.NewTestingHandler(testingService)
 	changeHandler := handler.NewChangeHandler(changeService)
 	importHandler := handler.NewImportHandler(importService)
+	customerHandler := handler.NewCustomerHandler(customerService)
 
 	// 6. Setup Router
 	r := router.SetupRouter(&router.RouterDependencies{
@@ -110,6 +114,7 @@ func main() {
 		CompHandler:         compHandler,
 		CategoryHandler:     catHandler,
 		PartnerHandler:      partnerHandler,
+		CustomerHandler:     customerHandler,
 		UnitHandler:         unitHandler,
 		UserHandler:         userHandler,
 		RoleHandler:         roleHandler,

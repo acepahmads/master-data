@@ -38,6 +38,11 @@ type ImportService struct {
 	duplicate     *ImportDuplicateService
 	aiProvider    provider.AIClassificationProvider
 	config        *config.Config
+	customerService *CustomerService
+}
+
+func (s *ImportService) SetCustomerService(cs *CustomerService) {
+	s.customerService = cs
 }
 
 func NewImportService(
@@ -1026,6 +1031,16 @@ func (s *ImportService) CommitApprovedBatch(batchID string, user string, parentP
 				}
 				if meta != nil && meta["customerCompany"] != "" {
 					targetMarket = meta["customerCompany"]
+				}
+
+				// Automatically upsert customer record from workbook metadata
+				if s.customerService != nil && meta != nil && (meta["customerCompany"] != "" || meta["customerName"] != "") {
+					docNum := meta["documentNumber"]
+					if docNum == "" {
+						docNum = "-"
+					}
+					descr := fmt.Sprintf("Imported from quotation %s (%s)", docNum, f.OriginalFileName)
+					_, _ = s.customerService.UpsertFromImport(meta["customerName"], meta["customerCompany"], meta["customerPhone"], meta["customerEmail"], descr)
 				}
 
 				docTitle := pName

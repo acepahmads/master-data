@@ -12,6 +12,7 @@ import ComponentFormView from '@/views/components/ComponentFormView.vue';
 import CategoryListView from '@/views/categories/CategoryListView.vue';
 import ManufacturerListView from '@/views/manufacturers/ManufacturerListView.vue';
 import SupplierListView from '@/views/suppliers/SupplierListView.vue';
+import CustomerListView from '@/views/customers/CustomerListView.vue';
 import UnitListView from '@/views/units/UnitListView.vue';
 import UserListView from '@/views/users/UserListView.vue';
 import RoleListView from '@/views/roles/RoleListView.vue';
@@ -271,6 +272,12 @@ const routes = [
     path: '/suppliers',
     name: 'Suppliers',
     component: SupplierListView
+  },
+  // Customers Module
+  {
+    path: '/customers',
+    name: 'Customers',
+    component: CustomerListView
   },
   // Units Module
   {
