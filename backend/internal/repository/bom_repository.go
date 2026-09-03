@@ -94,3 +94,18 @@ func (r *BOMRepository) ReorderItems(bomID string, itemIDs []string) error {
 		return nil
 	})
 }
+
+func (r *BOMRepository) ReplaceBOMItems(bomID string, items []model.BOMItem) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("engineering_bom_id = ?", bomID).Delete(&model.BOMItem{}).Error; err != nil {
+			return err
+		}
+		if len(items) > 0 {
+			if err := tx.Create(&items).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+

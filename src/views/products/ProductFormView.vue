@@ -734,6 +734,187 @@
           </div>
         </div>
       </div>
+
+      <!-- SECTION 06: BILL OF MATERIALS (BOM) & COMPONENTS (ONLY FOR MANUFACTURE PRODUCTS) -->
+      <div v-if="form.productType === 'MANUFACTURE'" class="app-card p-5 bg-white border border-emerald-200/80 shadow-card space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+              <AppIcon name="component" size="xs" />
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900">
+                  Engineering Bill of Materials (BOM) & Component Selection
+                </h2>
+                <span class="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  MANUFACTURE
+                </span>
+              </div>
+              <p class="text-3xs text-slate-500 mt-0.5">
+                Pilih dan tambahkan komponen-komponen penyusun untuk menghitung total biaya manufaktur produk ini.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            @click="addBOMRow"
+            class="btn btn-primary text-xs shrink-0"
+          >
+            <AppIcon name="plus" size="xs" class="mr-1 text-white" />
+            <span>+ Add Component</span>
+          </button>
+        </div>
+
+        <!-- BOM Items Table -->
+        <div v-if="bomItems.length > 0" class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="w-full text-left text-xs divide-y divide-slate-200">
+            <thead class="bg-slate-50 text-3xs font-bold text-slate-500 uppercase tracking-wider select-none">
+              <tr>
+                <th class="py-2.5 px-3 w-10 text-center">#</th>
+                <th class="py-2.5 px-3 min-w-[240px]">Component (Select from Master)</th>
+                <th class="py-2.5 px-3 w-32">Designator</th>
+                <th class="py-2.5 px-3 w-24 text-center">Qty</th>
+                <th class="py-2.5 px-3 w-20 text-center">UoM</th>
+                <th class="py-2.5 px-3 w-36 text-right">Unit Cost</th>
+                <th class="py-2.5 px-3 w-40 text-right">Subtotal Cost</th>
+                <th class="py-2.5 px-3 w-12 text-center"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr v-for="(item, idx) in bomItems" :key="idx" class="hover:bg-slate-50/70 transition-colors">
+                <td class="py-2.5 px-3 text-center font-mono text-3xs text-slate-400 font-bold">
+                  {{ idx + 1 }}
+                </td>
+                <td class="py-2.5 px-3">
+                  <select
+                    v-model="item.componentId"
+                    @change="onComponentSelect(item)"
+                    class="form-select text-xs font-mono py-1 font-medium text-slate-800"
+                  >
+                    <option value="" disabled>-- Choose Master Component --</option>
+                    <option
+                      v-for="c in store.components"
+                      :key="c.id || c.partNumber"
+                      :value="c.id || c.partNumber"
+                    >
+                      {{ c.partNumber }} — {{ c.name }} ({{ formatCurrency(c.estimatedUnitCost, c.currency) }})
+                    </option>
+                  </select>
+                  <div v-if="item.componentPartNumber" class="text-3xs text-slate-400 font-mono mt-0.5 flex items-center gap-2">
+                    <span>Part: <strong class="text-slate-600">{{ item.componentPartNumber }}</strong></span>
+                    <span v-if="item.componentCategory">| Cat: {{ item.componentCategory }}</span>
+                  </div>
+                </td>
+                <td class="py-2.5 px-3">
+                  <input
+                    v-model="item.referenceDesignators"
+                    type="text"
+                    placeholder="e.g. U1, C1-C4"
+                    class="form-input text-xs font-mono py-1"
+                  />
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                  <input
+                    v-model.number="item.quantity"
+                    type="number"
+                    min="1"
+                    step="1"
+                    class="form-input text-xs font-mono font-bold text-center py-1 w-20 mx-auto"
+                  />
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                  <span class="font-mono text-3xs font-bold px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
+                    {{ item.unitCode || 'PCS' }}
+                  </span>
+                </td>
+                <td class="py-2.5 px-3 text-right">
+                  <input
+                    v-model.number="item.unitCost"
+                    type="number"
+                    step="any"
+                    min="0"
+                    class="form-input text-xs font-mono font-bold text-right py-1"
+                  />
+                </td>
+                <td class="py-2.5 px-3 text-right">
+                  <span class="font-mono font-bold text-xs text-slate-900">
+                    {{ formatCurrency(item.quantity * item.unitCost, bomCurrency) }}
+                  </span>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                  <button
+                    type="button"
+                    @click="removeBOMRow(idx)"
+                    class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    title="Remove Component"
+                  >
+                    <AppIcon name="trash" size="xs" />
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Clean Empty State if no BOM items yet -->
+        <div
+          v-else
+          @click="addBOMRow"
+          class="border-2 border-dashed border-emerald-200 rounded-lg p-6 text-center cursor-pointer bg-emerald-50/30 hover:bg-emerald-50/60 transition-all"
+        >
+          <AppIcon name="component" size="md" class="mx-auto text-emerald-600 mb-2" />
+          <div class="text-xs font-bold text-slate-800">Belum Ada Komponen Ditambahkan</div>
+          <div class="text-3xs text-slate-500 mt-1 max-w-md mx-auto">
+            Klik di sini atau tombol <strong>"+ Add Component"</strong> untuk memilih komponen penyusun dari master data dan mengalkulasi harga modal manufaktur.
+          </div>
+        </div>
+
+        <!-- BOM Summary Cards -->
+        <div v-if="bomItems.length > 0" class="p-4 rounded-lg bg-emerald-50/60 border border-emerald-200 grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+          <div>
+            <span class="text-3xs font-semibold uppercase tracking-wider text-emerald-800 block">Total Komponen Unik</span>
+            <div class="font-mono font-bold text-sm text-emerald-950 mt-0.5">
+              {{ bomItems.length }} Item{{ bomItems.length > 1 ? 's' : '' }}
+            </div>
+            <span class="text-3xs text-emerald-700 font-mono">
+              Total {{ bomTotalQty }} pcs
+            </span>
+          </div>
+
+          <div>
+            <span class="text-3xs font-semibold uppercase tracking-wider text-emerald-800 block">Total Modal Komponen (BOM Cost)</span>
+            <div class="font-mono font-bold text-sm text-emerald-950 mt-0.5">
+              {{ formatCurrency(bomTotalCost, bomCurrency) }}
+            </div>
+            <span class="text-3xs text-emerald-700 font-mono">Akumulasi seluruh line cost</span>
+          </div>
+
+          <div>
+            <span class="text-3xs font-semibold uppercase tracking-wider text-emerald-800 block">Target Margin (%)</span>
+            <div class="relative mt-0.5">
+              <input
+                v-model.number="bomTargetMargin"
+                type="number"
+                step="1"
+                min="0"
+                max="500"
+                class="form-input text-xs font-mono font-bold pr-6 py-1 bg-white border-emerald-300"
+              />
+              <span class="absolute right-2 top-1.5 text-xs text-emerald-700 font-bold">%</span>
+            </div>
+          </div>
+
+          <div>
+            <span class="text-3xs font-semibold uppercase tracking-wider text-emerald-800 block">Estimasi Harga Jual Manufaktur</span>
+            <div class="font-mono font-bold text-sm text-emerald-950 mt-0.5">
+              {{ formatCurrency(bomEstimatedSellingPrice, bomCurrency) }}
+            </div>
+            <span class="text-3xs text-emerald-700 font-mono">MSRP (+{{ bomTargetMargin }}% margin)</span>
+          </div>
+        </div>
+      </div>
     </form>
   </div>
 </template>
@@ -742,6 +923,7 @@
 import { useMasterStore } from '@/stores/masterStore';
 import { exchangeRateApi } from '@/api/exchangeRate';
 import { uploadApi } from '@/api/upload';
+import { bomApi } from '@/api/bom';
 import { getImageUrl } from '@/utils/image';
 import PageHeader from '@/components/common/PageHeader.vue';
 import AppIcon from '@/components/common/AppIcon.vue';
@@ -797,7 +979,10 @@ export default {
         leadTimeDays: 14,
         warrantyInformation: '24 Months Factory Limited Warranty',
         notes: ''
-      }
+      },
+      bomItems: [],
+      bomTargetMargin: 35,
+      bomCurrency: 'IDR'
     };
   },
   computed: {
@@ -809,6 +994,20 @@ export default {
     },
     productId() {
       return this.$route.params.id;
+    },
+    bomTotalQty() {
+      return this.bomItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+    },
+    bomTotalCost() {
+      return this.bomItems.reduce((acc, item) => acc + ((Number(item.quantity) || 0) * (Number(item.unitCost) || 0)), 0);
+    },
+    bomEstimatedSellingPrice() {
+      const cost = this.bomTotalCost;
+      const margin = Number(this.bomTargetMargin) || 0;
+      if (margin > 0 && margin < 100) {
+        return Math.round((cost / (1 - margin / 100)) * 100) / 100;
+      }
+      return Math.round(cost * (1 + margin / 100) * 100) / 100;
     }
   },
   async mounted() {
@@ -867,12 +1066,74 @@ export default {
             await this.recalculatePricing(true);
           }
         }
+
+        if (this.form.productType === 'MANUFACTURE' || this.form.productType === 'RND') {
+          try {
+            const bomRes = await bomApi.getProductBOM(p.id || p.code);
+            if (bomRes && bomRes.data) {
+              const bom = bomRes.data;
+              this.bomTargetMargin = bom.targetMargin || 35;
+              this.bomCurrency = bom.currency || 'IDR';
+              if (bom.items && bom.items.length > 0) {
+                this.bomItems = bom.items.map(it => ({
+                  id: it.id,
+                  componentId: it.componentId || it.componentPartNumber,
+                  componentPartNumber: it.componentPartNumber || '',
+                  componentCategory: it.componentCategory || '',
+                  name: it.name || '',
+                  quantity: it.quantity || 1,
+                  unitCode: it.unitCode || 'PCS',
+                  unitCost: it.unitCost || 0,
+                  referenceDesignators: it.referenceDesignators || '',
+                  notes: it.notes || ''
+                }));
+              }
+            }
+          } catch (bomErr) {
+            console.warn('Could not fetch active BOM for manufacture product:', bomErr);
+          }
+        }
       }
     } else {
       await this.recalculatePricing();
     }
+
+    if (this.store.components.length === 0) {
+      await this.store.fetchComponents();
+    }
   },
   methods: {
+    addBOMRow() {
+      this.bomItems.push({
+        id: '',
+        componentId: '',
+        componentPartNumber: '',
+        componentCategory: '',
+        name: '',
+        quantity: 1,
+        unitCode: 'PCS',
+        unitCost: 0,
+        referenceDesignators: '',
+        notes: ''
+      });
+    },
+    removeBOMRow(idx) {
+      this.bomItems.splice(idx, 1);
+    },
+    onComponentSelect(item) {
+      if (!item.componentId) return;
+      const c = this.store.components.find(comp => comp.id === item.componentId || comp.partNumber === item.componentId);
+      if (c) {
+        item.componentPartNumber = c.partNumber;
+        item.componentCategory = c.category;
+        item.name = c.name;
+        item.unitCode = c.unit || 'PCS';
+        item.unitCost = Number(c.estimatedUnitCost) || 0;
+        if (c.currency) {
+          this.bomCurrency = c.currency;
+        }
+      }
+    },
     getImageUrl(url) {
       return getImageUrl(url);
     },
@@ -1157,6 +1418,18 @@ export default {
 
         if ((this.form.productType === 'TRADING' || this.form.productType === 'SERVICE') && this.isEdit) {
           await this.store.saveTradingDetail(targetId, this.tradingForm);
+        }
+
+        if ((this.form.productType === 'MANUFACTURE' || this.form.productType === 'RND') && this.bomItems.length > 0) {
+          try {
+            await bomApi.saveProductBOM(targetId, {
+              items: this.bomItems.filter(it => it.componentId || it.componentPartNumber),
+              targetMargin: this.bomTargetMargin,
+              currency: this.bomCurrency
+            });
+          } catch (bomSaveErr) {
+            console.error('Failed to save product BOM:', bomSaveErr);
+          }
         }
 
         this.store.showToast('Product Saved', `Product '${this.form.name}' saved successfully.`, 'success');

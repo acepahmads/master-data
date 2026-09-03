@@ -190,3 +190,34 @@ func (h *BOMHandler) GetProjectCostSummary(c *gin.Context) {
 	}
 	Success(c, summary)
 }
+
+func (h *BOMHandler) GetProductBOM(c *gin.Context) {
+	productID := c.Param("id")
+	bom, err := h.service.GetOrCreateActiveBOMForProduct(productID)
+	if err != nil {
+		NotFound(c, err.Error())
+		return
+	}
+	Success(c, bom)
+}
+
+func (h *BOMHandler) SaveProductBOM(c *gin.Context) {
+	productID := c.Param("id")
+	var req service.ProductBOMInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		BadRequest(c, "Invalid BOM payload", err.Error())
+		return
+	}
+
+	var currentUser *model.User
+	if u, exists := c.Get("user"); exists {
+		currentUser = u.(*model.User)
+	}
+
+	bom, err := h.service.SaveProductBOM(productID, &req, currentUser)
+	if err != nil {
+		BadRequest(c, err.Error())
+		return
+	}
+	Success(c, bom, "Product BOM updated successfully")
+}

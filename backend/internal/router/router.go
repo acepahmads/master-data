@@ -98,6 +98,10 @@ func SetupRouter(deps *RouterDependencies) *gin.Engine {
 				// Cost Summary Foundations (Phase 3)
 				products.GET("/:id/cost-summary", middleware.RequirePermission("products.view"), deps.BOMHandler.GetProductCostSummary)
 				products.GET("/:id/project-cost-summary", middleware.RequirePermission("products.view"), deps.BOMHandler.GetProjectCostSummary)
+
+				// Direct Product BOM & Components
+				products.GET("/:id/bom", middleware.RequirePermission("products.view"), deps.BOMHandler.GetProductBOM)
+				products.PUT("/:id/bom", middleware.RequirePermission("products.edit"), deps.BOMHandler.SaveProductBOM)
 			}
 
 			// Project Items Single Entity Operations

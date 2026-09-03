@@ -68,3 +68,7 @@ func (r *ProductRepository) Count() (int64, error) {
 	err := r.db.Model(&model.Product{}).Count(&count).Error
 	return count, err
 }
+
+func (r *ProductRepository) UpdateComponentsCount(id string, count int) error {
+	return r.db.Model(&model.Product{}).Where("id = ? OR code = ?", id, id).Update("components_count", count).Error
+}

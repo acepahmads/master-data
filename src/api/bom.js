@@ -54,6 +54,14 @@ export const bomApi = {
   // Get Project Solution Cost Summary
   getProjectCostSummary(projectId) {
     return client.get(`/products/${projectId}/project-cost-summary`);
+  },
+
+  // Direct Product BOM Operations
+  getProductBOM(productId) {
+    return client.get(`/products/${productId}/bom`);
+  },
+  saveProductBOM(productId, data) {
+    return client.put(`/products/${productId}/bom`, data);
   }
 };
 

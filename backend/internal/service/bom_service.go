@@ -620,3 +620,184 @@ func (s *BOMService) logActivity(currentUser *model.User, action, desc, entityID
 		CreatedAt:   time.Now(),
 	})
 }
+
+type ProductBOMInput struct {
+	Items        []BOMItemRequest `json:"items"`
+	TargetMargin float64          `json:"targetMargin"`
+	Currency     string           `json:"currency"`
+}
+
+type BOMItemRequest struct {
+	ID                   string  `json:"id"`
+	ComponentID          *string `json:"componentId"`
+	ComponentPartNumber  string  `json:"componentPartNumber"`
+	ComponentCategory    string  `json:"componentCategory"`
+	Name                 string  `json:"name"`
+	Quantity             float64 `json:"quantity"`
+	UnitCode             string  `json:"unitCode"`
+	UnitCost             float64 `json:"unitCost"`
+	ReferenceDesignators string  `json:"referenceDesignators"`
+	Notes                string  `json:"notes"`
+}
+
+func (s *BOMService) GetOrCreateActiveBOMForProduct(productID string) (*model.EngineeringBOM, error) {
+	prod, err := s.productRepo.FindByID(productID)
+	if err != nil {
+		return nil, errors.New("product not found")
+	}
+
+	// 1. Locate or create baseline version (e.g. v1.0.0)
+	versions, _ := s.versionRepo.FindByProduct(prod.ID)
+	var activeVer *model.ProductVersion
+	if len(versions) > 0 {
+		activeVer = &versions[0]
+	} else {
+		newVer := &model.ProductVersion{
+			ID:              fmt.Sprintf("VER-%s-v1.0.0", prod.Code),
+			ProductID:       prod.ID,
+			ProductCode:     prod.Code,
+			ProductName:     prod.Name,
+			VersionNumber:   "v1.0.0",
+			VersionName:     "Initial Production Release",
+			Status:          "Active",
+			CurrentRevision: "REV-A",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+		if err := s.versionRepo.Create(newVer); err != nil {
+			return nil, err
+		}
+		activeVer = newVer
+	}
+
+	// 2. Locate or create baseline revision (e.g. REV-A)
+	revs, _ := s.revRepo.FindByVersion(activeVer.ID)
+	var activeRev *model.HardwareRevision
+	if len(revs) > 0 {
+		activeRev = &revs[0]
+	} else {
+		newRev := &model.HardwareRevision{
+			ID:                fmt.Sprintf("REV-%s-v1.0.0-REV-A", prod.Code),
+			ProductVersionID:  activeVer.ID,
+			VersionNumber:     activeVer.VersionNumber,
+			ProductCode:       prod.Code,
+			ProductName:       prod.Name,
+			Code:              "REV-A",
+			Name:              "Initial Hardware Release",
+			Status:            "Approved",
+			PCBRevision:       "1.0",
+			SchematicRevision: "1.0",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+		}
+		if err := s.revRepo.Create(newRev); err != nil {
+			return nil, err
+		}
+		activeRev = newRev
+	}
+
+	// 3. Locate or create EngineeringBOM
+	bom, _ := s.repo.FindByRevisionID(activeRev.ID)
+	if bom == nil {
+		newBOM := &model.EngineeringBOM{
+			ID:                 fmt.Sprintf("BOM-%s-v1.0.0-REV-A", prod.Code),
+			HardwareRevisionID: activeRev.ID,
+			BOMCode:            fmt.Sprintf("BOM-%s-v1.0.0-REV-A", prod.Code),
+			Name:               fmt.Sprintf("%s Engineering BOM", prod.Name),
+			Status:             model.BOMStatusActive,
+			Currency:           "IDR",
+			TargetMargin:       35.00,
+			CreatedBy:          "System Engineer",
+			CreatedAt:          time.Now(),
+			UpdatedAt:          time.Now(),
+		}
+		if err := s.repo.Create(newBOM); err != nil {
+			return nil, err
+		}
+		bom = newBOM
+	}
+
+	// Preload items and component info
+	items, _ := s.repo.FindItemsByBOMID(bom.ID)
+	bom.Items = items
+	return bom, nil
+}
+
+func (s *BOMService) SaveProductBOM(productID string, req *ProductBOMInput, currentUser *model.User) (*model.EngineeringBOM, error) {
+	bom, err := s.GetOrCreateActiveBOMForProduct(productID)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.TargetMargin > 0 {
+		bom.TargetMargin = req.TargetMargin
+	}
+	if req.Currency != "" {
+		bom.Currency = req.Currency
+	}
+
+	var totalCost float64 = 0
+	var dbItems []model.BOMItem
+
+	for idx, itemReq := range req.Items {
+		itemCost := math.Round((itemReq.Quantity * itemReq.UnitCost) * 100) / 100
+		totalCost += itemCost
+
+		itemID := itemReq.ID
+		if itemID == "" {
+			itemID = fmt.Sprintf("BOM-ITM-%d-%d", time.Now().UnixNano()%1000000, idx+1)
+		}
+
+		name := itemReq.Name
+		if name == "" && itemReq.ComponentPartNumber != "" {
+			name = itemReq.ComponentPartNumber
+		}
+
+		dbItems = append(dbItems, model.BOMItem{
+			ID:                   itemID,
+			EngineeringBOMID:     bom.ID,
+			ItemType:             model.BOMItemTypeComponent,
+			Name:                 name,
+			ComponentID:          itemReq.ComponentID,
+			ComponentPartNumber:  itemReq.ComponentPartNumber,
+			ComponentCategory:    itemReq.ComponentCategory,
+			Quantity:             itemReq.Quantity,
+			UnitCode:             itemReq.UnitCode,
+			UnitCost:             itemReq.UnitCost,
+			LineCost:             itemCost,
+			ReferenceDesignators: itemReq.ReferenceDesignators,
+			Position:             idx + 1,
+			Notes:                itemReq.Notes,
+			CreatedAt:            time.Now(),
+			UpdatedAt:            time.Now(),
+		})
+	}
+
+	totalCost = math.Round(totalCost*100) / 100
+	bom.TotalCost = totalCost
+
+	margin := bom.TargetMargin
+	if margin > 0 && margin < 100 {
+		bom.EstimatedSellingPrice = math.Round((totalCost / (1.0 - (margin / 100.0))) * 100) / 100
+	} else {
+		bom.EstimatedSellingPrice = math.Round(totalCost * (1.0 + (margin / 100.0)) * 100) / 100
+	}
+	bom.UpdatedAt = time.Now()
+
+	// Replace items in DB
+	if err := s.repo.ReplaceBOMItems(bom.ID, dbItems); err != nil {
+		return nil, err
+	}
+
+	// Update BOM record
+	if err := s.repo.Update(bom); err != nil {
+		return nil, err
+	}
+
+	// Update components_count on product
+	_ = s.productRepo.UpdateComponentsCount(productID, len(dbItems))
+
+	bom.Items = dbItems
+	return bom, nil
+}
+
