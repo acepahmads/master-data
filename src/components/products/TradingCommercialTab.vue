@@ -205,9 +205,9 @@
               <div class="grid grid-cols-5 gap-1.5">
                 <input
                   v-model.number="editForm.purchasePrice"
-                  @input="recalculateModalPricing"
+                  @input="onModalPurchasePriceInput"
                   type="number"
-                  step="0.01"
+                  step="any"
                   min="0"
                   class="form-input col-span-3 font-mono font-bold text-xs"
                 />
@@ -230,7 +230,7 @@
               <div class="relative">
                 <input
                   v-model.number="editForm.profitMarginPercentage"
-                  @input="recalculateModalPricing"
+                  @input="onModalMarginInput"
                   type="number"
                   step="1"
                   min="0"
@@ -246,10 +246,13 @@
               <span class="text-3xs font-bold uppercase text-purple-900 block">Derived Selling Price</span>
               <div class="grid grid-cols-5 gap-1.5">
                 <input
-                  :value="editForm.sellingPrice"
-                  readonly
+                  v-model.number="editForm.sellingPrice"
+                  @input="onModalSellingPriceInput"
                   type="number"
-                  class="form-input col-span-3 font-mono font-bold text-xs bg-white text-purple-900 border-purple-300 cursor-not-allowed"
+                  step="any"
+                  min="0"
+                  class="form-input col-span-3 font-mono font-bold text-xs bg-white text-purple-900 border-purple-300 focus:border-brand-500 shadow-inner"
+                  placeholder="0"
                 />
                 <select
                   v-model="editForm.sellingCurrency"
@@ -430,16 +433,26 @@ export default {
       }).format(amount);
     },
     openEditModal() {
+      let purchasePrice = Number(this.detail.purchasePrice) || 0;
+      let sellingPrice = Number(this.detail.sellingPrice) || 0;
+      const margin = Number(this.detail.profitMarginPercentage) !== undefined && this.detail.profitMarginPercentage !== null && Number(this.detail.profitMarginPercentage) >= 0 ? Number(this.detail.profitMarginPercentage) : 25;
+
+      if (purchasePrice === 0 && sellingPrice > 0) {
+        purchasePrice = Math.round((sellingPrice / (1 + margin / 100)) * 100) / 100;
+      } else if (sellingPrice === 0 && purchasePrice > 0) {
+        sellingPrice = Math.round(purchasePrice * (1 + margin / 100) * 100) / 100;
+      }
+
       this.editForm = {
         manufacturerName: this.detail.manufacturerName || '',
         manufacturerPartNumber: this.detail.manufacturerPartNumber || '',
         supplierName: this.detail.supplierName || '',
         supplierPartNumber: this.detail.supplierPartNumber || '',
-        purchasePrice: this.detail.purchasePrice || 0,
-        purchaseCurrency: this.detail.purchaseCurrency || this.detail.currency || 'USD',
-        profitMarginPercentage: this.detail.profitMarginPercentage || 25,
-        sellingPrice: this.detail.sellingPrice || 0,
-        sellingCurrency: this.detail.sellingCurrency || this.detail.purchaseCurrency || this.detail.currency || 'USD',
+        purchasePrice,
+        purchaseCurrency: this.detail.purchaseCurrency || this.detail.currency || 'IDR',
+        profitMarginPercentage: margin,
+        sellingPrice,
+        sellingCurrency: this.detail.sellingCurrency || this.detail.purchaseCurrency || this.detail.currency || 'IDR',
         exchangeRateMode: this.detail.exchangeRateMode || 'AUTO',
         liveExchangeRate: this.detail.liveExchangeRate || 16500,
         manualExchangeRate: this.detail.manualExchangeRate || this.detail.effectiveExchangeRate || 16500,
@@ -452,7 +465,7 @@ export default {
         notes: this.detail.notes || ''
       };
       this.modalOpen = true;
-      this.recalculateModalPricing();
+      this.recalculateModalPricing(true);
     },
     onModalPurchaseCurrencyChange() {
       this.editForm.sellingCurrency = this.editForm.purchaseCurrency;
@@ -471,7 +484,33 @@ export default {
       this.editForm.effectiveExchangeRate = live;
       this.recalculateModalPricing();
     },
-    async recalculateModalPricing() {
+    onModalPurchasePriceInput() {
+      const cost = Number(this.editForm.purchasePrice) || 0;
+      const margin = Number(this.editForm.profitMarginPercentage) || 0;
+      this.editForm.sellingPrice = Math.round(cost * (1 + margin / 100) * 100) / 100;
+      this.recalculateModalPricing(false);
+    },
+    onModalSellingPriceInput() {
+      const selling = Number(this.editForm.sellingPrice) || 0;
+      const margin = Number(this.editForm.profitMarginPercentage) || 0;
+      if (selling > 0 && margin >= 0) {
+        this.editForm.purchasePrice = Math.round((selling / (1 + margin / 100)) * 100) / 100;
+      }
+      this.recalculateModalPricing(true);
+    },
+    onModalMarginInput() {
+      const cost = Number(this.editForm.purchasePrice) || 0;
+      const margin = Number(this.editForm.profitMarginPercentage) || 0;
+      if (cost > 0) {
+        this.editForm.sellingPrice = Math.round(cost * (1 + margin / 100) * 100) / 100;
+        this.recalculateModalPricing(false);
+      } else if (Number(this.editForm.sellingPrice) > 0) {
+        this.editForm.purchasePrice = Math.round((Number(this.editForm.sellingPrice) / (1 + margin / 100)) * 100) / 100;
+        this.recalculateModalPricing(true);
+      }
+    },
+    async recalculateModalPricing(keepSellingPrice = false) {
+      const preservedSelling = keepSellingPrice ? Number(this.editForm.sellingPrice) : null;
       try {
         const res = await exchangeRateApi.calculatePricing({
           purchasePrice: Number(this.editForm.purchasePrice) || 0,
@@ -482,33 +521,44 @@ export default {
           manualExchangeRate: Number(this.editForm.manualExchangeRate) || 0
         });
         if (res && res.data) {
-          this.editForm.sellingPrice = res.data.sellingPrice;
+          if (!keepSellingPrice || !preservedSelling) {
+            this.editForm.sellingPrice = res.data.sellingPrice;
+          }
           this.editForm.liveExchangeRate = res.data.liveExchangeRate;
           this.editForm.effectiveExchangeRate = res.data.effectiveExchangeRate;
           this.editForm.exchangeRateProvider = res.data.exchangeRateProvider;
           this.editForm.purchasePriceInIDR = res.data.purchasePriceInIDR;
-          this.editForm.sellingPriceInIDR = res.data.sellingPriceInIDR;
+
+          if (keepSellingPrice && preservedSelling) {
+            const effRate = res.data.effectiveExchangeRate || 16500;
+            this.editForm.sellingPriceInIDR = this.editForm.sellingCurrency === 'IDR' ? preservedSelling : Math.round(preservedSelling * effRate);
+          } else {
+            this.editForm.sellingPriceInIDR = res.data.sellingPriceInIDR;
+          }
         }
       } catch (err) {
         const cost = Number(this.editForm.purchasePrice) || 0;
         const margin = Number(this.editForm.profitMarginPercentage) || 0;
-        const baseSelling = cost * (1 + margin / 100);
         const effRate = this.editForm.exchangeRateMode === 'MANUAL' && this.editForm.manualExchangeRate > 0
           ? this.editForm.manualExchangeRate
           : (this.editForm.liveExchangeRate || 16500);
 
         this.editForm.effectiveExchangeRate = effRate;
 
-        if (this.editForm.purchaseCurrency === this.editForm.sellingCurrency) {
-          this.editForm.sellingPrice = Math.round(baseSelling * 100) / 100;
-        } else if (this.editForm.purchaseCurrency === 'USD' && this.editForm.sellingCurrency === 'IDR') {
-          this.editForm.sellingPrice = Math.round(baseSelling * effRate);
-        } else if (this.editForm.purchaseCurrency === 'IDR' && this.editForm.sellingCurrency === 'USD') {
-          this.editForm.sellingPrice = Math.round((baseSelling / effRate) * 100) / 100;
+        if (!keepSellingPrice || !preservedSelling) {
+          const baseSelling = cost * (1 + margin / 100);
+          if (this.editForm.purchaseCurrency === this.editForm.sellingCurrency) {
+            this.editForm.sellingPrice = Math.round(baseSelling * 100) / 100;
+          } else if (this.editForm.purchaseCurrency === 'USD' && this.editForm.sellingCurrency === 'IDR') {
+            this.editForm.sellingPrice = Math.round(baseSelling * effRate);
+          } else if (this.editForm.purchaseCurrency === 'IDR' && this.editForm.sellingCurrency === 'USD') {
+            this.editForm.sellingPrice = Math.round((baseSelling / effRate) * 100) / 100;
+          }
         }
 
         this.editForm.purchasePriceInIDR = this.editForm.purchaseCurrency === 'IDR' ? cost : Math.round(cost * effRate);
-        this.editForm.sellingPriceInIDR = this.editForm.sellingCurrency === 'IDR' ? this.editForm.sellingPrice : Math.round(this.editForm.sellingPrice * effRate);
+        const finalSell = Number(this.editForm.sellingPrice) || 0;
+        this.editForm.sellingPriceInIDR = this.editForm.sellingCurrency === 'IDR' ? finalSell : Math.round(finalSell * effRate);
       }
     },
     async saveDetails() {

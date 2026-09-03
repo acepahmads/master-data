@@ -476,9 +476,9 @@
               <div class="grid grid-cols-5 gap-2">
                 <input
                   v-model.number="tradingForm.purchasePrice"
-                  @input="recalculatePricing"
+                  @input="onPurchasePriceInput"
                   type="number"
-                  step="0.01"
+                  step="any"
                   min="0"
                   class="form-input col-span-3 font-mono font-bold text-xs"
                   placeholder="0.00"
@@ -509,7 +509,7 @@
               <div class="relative">
                 <input
                   v-model.number="tradingForm.profitMarginPercentage"
-                  @input="recalculatePricing"
+                  @input="onMarginInput"
                   type="number"
                   step="1"
                   min="0"
@@ -532,10 +532,13 @@
               </div>
               <div class="grid grid-cols-5 gap-2">
                 <input
-                  :value="tradingForm.sellingPrice"
-                  readonly
+                  v-model.number="tradingForm.sellingPrice"
+                  @input="onSellingPriceInput"
                   type="number"
-                  class="form-input col-span-3 font-mono font-bold text-xs bg-white text-purple-900 border-purple-300 cursor-not-allowed shadow-inner"
+                  step="any"
+                  min="0"
+                  class="form-input col-span-3 font-mono font-bold text-xs bg-white text-purple-900 border-purple-300 focus:border-brand-500 focus:ring-brand-500 shadow-inner"
+                  placeholder="0"
                 />
                 <select
                   v-model="tradingForm.sellingCurrency"
@@ -836,19 +839,32 @@ export default {
           this.productImages = [p.image];
         }
 
-        if (this.form.productType === 'TRADING') {
+        if (this.form.productType === 'TRADING' || this.form.productType === 'SERVICE') {
           const detail = await this.store.fetchTradingDetail(p.id);
           if (detail) {
+            let purchasePrice = Number(detail.purchasePrice) || 0;
+            let sellingPrice = Number(detail.sellingPrice) || 0;
+            const margin = Number(detail.profitMarginPercentage) !== undefined && detail.profitMarginPercentage !== null && Number(detail.profitMarginPercentage) >= 0 ? Number(detail.profitMarginPercentage) : 25;
+
+            // Intelligent reverse calculation if selling price was imported/defined but purchase cost was 0
+            if (purchasePrice === 0 && sellingPrice > 0) {
+              purchasePrice = Math.round((sellingPrice / (1 + margin / 100)) * 100) / 100;
+            } else if (sellingPrice === 0 && purchasePrice > 0) {
+              sellingPrice = Math.round(purchasePrice * (1 + margin / 100) * 100) / 100;
+            }
+
             this.tradingForm = {
               ...this.tradingForm,
               ...detail,
-              purchaseCurrency: detail.purchaseCurrency || detail.currency || 'USD',
-              sellingCurrency: detail.sellingCurrency || detail.purchaseCurrency || detail.currency || 'USD',
-              profitMarginPercentage: detail.profitMarginPercentage || 25,
+              purchasePrice,
+              sellingPrice,
+              purchaseCurrency: detail.purchaseCurrency || detail.currency || 'IDR',
+              sellingCurrency: detail.sellingCurrency || detail.purchaseCurrency || detail.currency || 'IDR',
+              profitMarginPercentage: margin,
               exchangeRateMode: detail.exchangeRateMode || 'AUTO',
-              manualExchangeRate: detail.manualExchangeRate || detail.effectiveExchangeRate || 17749
+              manualExchangeRate: detail.manualExchangeRate || detail.effectiveExchangeRate || 16500
             };
-            await this.recalculatePricing();
+            await this.recalculatePricing(true);
           }
         }
       }
@@ -924,7 +940,33 @@ export default {
       this.recalculatePricing();
       this.store.showToast('Live Rate Synced', `Exchange rate updated to live market Rp ${Number(live).toLocaleString('id-ID')}`, 'success');
     },
-    async recalculatePricing() {
+    onPurchasePriceInput() {
+      const cost = Number(this.tradingForm.purchasePrice) || 0;
+      const margin = Number(this.tradingForm.profitMarginPercentage) || 0;
+      this.tradingForm.sellingPrice = Math.round(cost * (1 + margin / 100) * 100) / 100;
+      this.recalculatePricing(false);
+    },
+    onSellingPriceInput() {
+      const selling = Number(this.tradingForm.sellingPrice) || 0;
+      const margin = Number(this.tradingForm.profitMarginPercentage) || 0;
+      if (selling > 0 && margin >= 0) {
+        this.tradingForm.purchasePrice = Math.round((selling / (1 + margin / 100)) * 100) / 100;
+      }
+      this.recalculatePricing(true);
+    },
+    onMarginInput() {
+      const cost = Number(this.tradingForm.purchasePrice) || 0;
+      const margin = Number(this.tradingForm.profitMarginPercentage) || 0;
+      if (cost > 0) {
+        this.tradingForm.sellingPrice = Math.round(cost * (1 + margin / 100) * 100) / 100;
+        this.recalculatePricing(false);
+      } else if (Number(this.tradingForm.sellingPrice) > 0) {
+        this.tradingForm.purchasePrice = Math.round((Number(this.tradingForm.sellingPrice) / (1 + margin / 100)) * 100) / 100;
+        this.recalculatePricing(true);
+      }
+    },
+    async recalculatePricing(keepSellingPrice = false) {
+      const preservedSelling = keepSellingPrice ? Number(this.tradingForm.sellingPrice) : null;
       try {
         const res = await exchangeRateApi.calculatePricing({
           purchasePrice: Number(this.tradingForm.purchasePrice) || 0,
@@ -936,36 +978,47 @@ export default {
         });
 
         if (res && res.data) {
-          this.tradingForm.sellingPrice = res.data.sellingPrice;
+          if (!keepSellingPrice || !preservedSelling) {
+            this.tradingForm.sellingPrice = res.data.sellingPrice;
+          }
           this.tradingForm.liveExchangeRate = res.data.liveExchangeRate;
           this.tradingForm.effectiveExchangeRate = res.data.effectiveExchangeRate;
           this.tradingForm.exchangeRateProvider = res.data.exchangeRateProvider;
           this.tradingForm.purchasePriceInIDR = res.data.purchasePriceInIDR;
-          this.tradingForm.sellingPriceInIDR = res.data.sellingPriceInIDR;
+
+          if (keepSellingPrice && preservedSelling) {
+            const effRate = res.data.effectiveExchangeRate || 16500;
+            this.tradingForm.sellingPriceInIDR = this.tradingForm.sellingCurrency === 'IDR' ? preservedSelling : Math.round(preservedSelling * effRate);
+          } else {
+            this.tradingForm.sellingPriceInIDR = res.data.sellingPriceInIDR;
+          }
         }
       } catch (err) {
         // Fallback local math
         const cost = Number(this.tradingForm.purchasePrice) || 0;
         const margin = Number(this.tradingForm.profitMarginPercentage) || 0;
-        const baseSelling = cost * (1 + margin / 100);
         const effRate = this.tradingForm.exchangeRateMode === 'MANUAL' && this.tradingForm.manualExchangeRate > 0
           ? this.tradingForm.manualExchangeRate
           : (this.tradingForm.liveExchangeRate || 16500);
 
         this.tradingForm.effectiveExchangeRate = effRate;
 
-        if (this.tradingForm.purchaseCurrency === this.tradingForm.sellingCurrency) {
-          this.tradingForm.sellingPrice = Math.round(baseSelling * 100) / 100;
-        } else if (this.tradingForm.purchaseCurrency === 'USD' && this.tradingForm.sellingCurrency === 'IDR') {
-          this.tradingForm.sellingPrice = Math.round(baseSelling * effRate);
-        } else if (this.tradingForm.purchaseCurrency === 'IDR' && this.tradingForm.sellingCurrency === 'USD') {
-          this.tradingForm.sellingPrice = Math.round((baseSelling / effRate) * 100) / 100;
-        } else {
-          this.tradingForm.sellingPrice = Math.round(baseSelling * 100) / 100;
+        if (!keepSellingPrice || !preservedSelling) {
+          const baseSelling = cost * (1 + margin / 100);
+          if (this.tradingForm.purchaseCurrency === this.tradingForm.sellingCurrency) {
+            this.tradingForm.sellingPrice = Math.round(baseSelling * 100) / 100;
+          } else if (this.tradingForm.purchaseCurrency === 'USD' && this.tradingForm.sellingCurrency === 'IDR') {
+            this.tradingForm.sellingPrice = Math.round(baseSelling * effRate);
+          } else if (this.tradingForm.purchaseCurrency === 'IDR' && this.tradingForm.sellingCurrency === 'USD') {
+            this.tradingForm.sellingPrice = Math.round((baseSelling / effRate) * 100) / 100;
+          } else {
+            this.tradingForm.sellingPrice = Math.round(baseSelling * 100) / 100;
+          }
         }
 
         this.tradingForm.purchasePriceInIDR = this.tradingForm.purchaseCurrency === 'IDR' ? cost : Math.round(cost * effRate);
-        this.tradingForm.sellingPriceInIDR = this.tradingForm.sellingCurrency === 'IDR' ? this.tradingForm.sellingPrice : Math.round(this.tradingForm.sellingPrice * effRate);
+        const finalSell = Number(this.tradingForm.sellingPrice) || 0;
+        this.tradingForm.sellingPriceInIDR = this.tradingForm.sellingCurrency === 'IDR' ? finalSell : Math.round(finalSell * effRate);
       }
     },
     triggerFileInput() {
