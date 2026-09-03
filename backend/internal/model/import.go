@@ -138,8 +138,8 @@ type ImportStagedRow struct {
 	NormalizedMfg      string     `gorm:"size:128" json:"normalizedMfg"`
 	NormalizedSupplier string     `gorm:"size:128" json:"normalizedSupplier"`
 	NormalizedUnit     string     `gorm:"size:32" json:"normalizedUnit"`
-	UnitCost           float64    `gorm:"type:decimal(15,4);default:0" json:"unitCost"`
-	SellingPrice       float64    `gorm:"type:decimal(15,4);default:0" json:"sellingPrice"`
+	UnitCost           float64    `gorm:"type:decimal(20,4);default:0" json:"unitCost"`
+	SellingPrice       float64    `gorm:"type:decimal(20,4);default:0" json:"sellingPrice"`
 	Currency           string     `gorm:"size:8;default:'IDR'" json:"currency"`
 	TargetMarket       string     `gorm:"size:255" json:"targetMarket"`
 	Description        string     `gorm:"type:text" json:"description"`

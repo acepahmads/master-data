@@ -172,6 +172,11 @@ func TestCurrencyParsing(t *testing.T) {
 		{"$12.50", 12.50, "USD"},
 		{"$1,500.00", 1500.00, "USD"},
 		{"$500,000", 500000.00, "USD"},
+		{"Rp113,550,000", 113550000.00, "IDR"},
+		{"Rp163,950,000.00", 163950000.00, "IDR"},
+		{"HC 0 - 40 ppm, \nWind Speed & Wind Direction 0 - 50 m/s, \nTemperature - 40 - 80 ͦC, \nNoise 0 - 45 dB.", 0, "IDR"},
+		{"24V to 12V / 5V Industrial", 0, "IDR"},
+		{"PM 2.5 0 - 1000 μg/m3, \nPM 10 0 - 1000 μg/m3", 0, "IDR"},
 	}
 
 	for _, tc := range testCases {

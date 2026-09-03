@@ -672,7 +672,7 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 				if biayaColIdx == -1 {
 					biayaColIdx = cIdx
 				}
-			} else if strings.Contains(hLow, "total") || strings.Contains(hLow, "subtotal") {
+			} else if strings.Contains(hLow, "total") || strings.Contains(hLow, "subtotal") || strings.Contains(hLow, "amount") || strings.Contains(hLow, "jumlah harga") {
 				if totalColIdx == -1 {
 					totalColIdx = cIdx
 				}
@@ -935,23 +935,54 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 
 			normHelper := NewImportNormalizerService()
 			parsedPrice := 0.0
-			for cIdx, v := range rowValues {
-				if cIdx == noColIdx || cIdx == descColIdx || cIdx == volColIdx || cIdx == satColIdx || cIdx >= len(headers) {
-					continue
-				}
-				if cIdx < len(headers) {
-					hLow := strings.ToLower(headers[cIdx])
-					if strings.Contains(hLow, "vol") || strings.Contains(hLow, "qty") || strings.Contains(hLow, "jumlah") || strings.Contains(hLow, "sat") || strings.Contains(hLow, "no") || strings.Contains(hLow, "item") || strings.Contains(hLow, "deskripsi") || strings.Contains(hLow, "description") {
-						continue
+
+			// 1. Prioritize explicit Unit Price column (Price / unit, Harga, Biaya)
+			if biayaColIdx >= 0 && biayaColIdx < len(rowValues) {
+				bTrim := strings.TrimSpace(rowValues[biayaColIdx])
+				if bTrim != "" && bTrim != "-" && bTrim != "0" {
+					p, _ := normHelper.parseCurrencyAmount(bTrim)
+					if p > 0 {
+						parsedPrice = p
 					}
 				}
-				vTrim := strings.TrimSpace(v)
-				if vTrim != "" && vTrim != "-" && vTrim != "0" {
-					p, _ := normHelper.parseCurrencyAmount(vTrim)
-					isPriceLike := p >= 1000 || strings.Contains(vTrim, "Rp") || strings.Contains(vTrim, "$")
-					if p > 0 && isPriceLike {
+			}
+
+			// 2. Secondary: If Unit Price is missing or 0, check Total/Amount column
+			if parsedPrice == 0 && totalColIdx >= 0 && totalColIdx < len(rowValues) {
+				tTrim := strings.TrimSpace(rowValues[totalColIdx])
+				if tTrim != "" && tTrim != "-" && tTrim != "0" {
+					p, _ := normHelper.parseCurrencyAmount(tTrim)
+					if p > 0 {
 						parsedPrice = p
-						break
+					}
+				}
+			}
+
+			// 3. Fallback: Only scan columns that explicitly have pricing semantics in their header
+			if parsedPrice == 0 {
+				for cIdx, v := range rowValues {
+					if cIdx == noColIdx || cIdx == descColIdx || cIdx == volColIdx || cIdx == satColIdx || cIdx >= len(headers) {
+						continue
+					}
+					// Ignore un-named columns or non-pricing headers
+					if strings.HasPrefix(headers[cIdx], "Column_") {
+						continue
+					}
+					hLow := strings.ToLower(headers[cIdx])
+					if strings.Contains(hLow, "vol") || strings.Contains(hLow, "qty") || strings.Contains(hLow, "jumlah") || strings.Contains(hLow, "sat") || strings.Contains(hLow, "no") || strings.Contains(hLow, "item") || strings.Contains(hLow, "deskripsi") || strings.Contains(hLow, "description") || strings.Contains(hLow, "spec") || strings.Contains(hLow, "keterangan") || strings.Contains(hLow, "note") {
+						continue
+					}
+					if !strings.Contains(hLow, "harga") && !strings.Contains(hLow, "price") && !strings.Contains(hLow, "biaya") && !strings.Contains(hLow, "cost") && !strings.Contains(hLow, "tarif") && !strings.Contains(hLow, "amount") && !strings.Contains(hLow, "total") {
+						continue
+					}
+					vTrim := strings.TrimSpace(v)
+					if vTrim != "" && vTrim != "-" && vTrim != "0" {
+						p, _ := normHelper.parseCurrencyAmount(vTrim)
+						isPriceLike := p >= 1000 || strings.Contains(vTrim, "Rp") || strings.Contains(vTrim, "$")
+						if p > 0 && isPriceLike {
+							parsedPrice = p
+							break
+						}
 					}
 				}
 			}

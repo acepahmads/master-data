@@ -247,8 +247,15 @@ func (n *ImportNormalizerService) NormalizeStagedRow(row *model.ImportStagedRow,
 	// Smart Fallback for Price / Cost (e.g. when "Rp" is separated from numeric column "5.000.000" or generic column):
 	if row.SellingPrice == 0 {
 		for hKey, cellVal := range rawMap {
+			// Skip un-named columns (Column_X) and non-price headers
+			if strings.HasPrefix(hKey, "Column_") {
+				continue
+			}
 			hLow := strings.ToLower(hKey)
-			if strings.Contains(hLow, "diskon") || strings.Contains(hLow, "ppn") || strings.Contains(hLow, "vol") || strings.Contains(hLow, "qty") || strings.Contains(hLow, "jumlah") || strings.Contains(hLow, "no") || strings.Contains(hLow, "sat") {
+			if strings.Contains(hLow, "diskon") || strings.Contains(hLow, "ppn") || strings.Contains(hLow, "vol") || strings.Contains(hLow, "qty") || strings.Contains(hLow, "jumlah") || strings.Contains(hLow, "no") || strings.Contains(hLow, "sat") || strings.Contains(hLow, "deskripsi") || strings.Contains(hLow, "description") || strings.Contains(hLow, "item") || strings.Contains(hLow, "nama") {
+				continue
+			}
+			if !strings.Contains(hLow, "harga") && !strings.Contains(hLow, "price") && !strings.Contains(hLow, "biaya") && !strings.Contains(hLow, "cost") && !strings.Contains(hLow, "tarif") && !strings.Contains(hLow, "amount") && !strings.Contains(hLow, "total") {
 				continue
 			}
 			cTrim := strings.TrimSpace(cellVal)
@@ -401,15 +408,37 @@ func (n *ImportNormalizerService) normalizeUoM(raw string) string {
 func (n *ImportNormalizerService) parseCurrencyAmount(raw string) (float64, string) {
 	currency := "IDR"
 	cleaned := strings.TrimSpace(raw)
-	rawLow := strings.ToLower(raw)
+	if cleaned == "" || cleaned == "-" || cleaned == "0" {
+		return 0, currency
+	}
+
+	// Multi-line cells represent descriptions/specifications, never a single currency amount
+	if strings.Contains(cleaned, "\n") {
+		return 0, currency
+	}
+
+	rawLow := strings.ToLower(cleaned)
 
 	// Filter out technical specifications and engineering measurement units
 	if strings.Contains(rawLow, "j/g") || strings.Contains(rawLow, "kcal") || strings.Contains(rawLow, "°c") ||
-		strings.Contains(rawLow, "kg") || strings.Contains(rawLow, "cm") || strings.Contains(rawLow, "mm") ||
-		strings.Contains(rawLow, "±") || strings.Contains(rawLow, "rh") || strings.Contains(rawLow, "%") ||
-		strings.Contains(rawLow, "220v") || strings.Contains(rawLow, "360w") || strings.Contains(rawLow, "watt") ||
-		strings.Contains(rawLow, "volt") || strings.Contains(rawLow, "minutes") || strings.Contains(rawLow, "menit") ||
-		strings.Contains(rawLow, "jam") || strings.Contains(rawLow, "quality") || strings.Contains(rawLow, "weight") {
+		strings.Contains(rawLow, "ͦc") || strings.Contains(rawLow, "kg") || strings.Contains(rawLow, "cm") ||
+		strings.Contains(rawLow, "mm") || strings.Contains(rawLow, "±") || strings.Contains(rawLow, "rh") ||
+		strings.Contains(rawLow, "%") || strings.Contains(rawLow, "ppm") || strings.Contains(rawLow, "m/s") ||
+		strings.Contains(rawLow, "db") || strings.Contains(rawLow, "μg") || strings.Contains(rawLow, "ug") ||
+		strings.Contains(rawLow, "mg/") || strings.Contains(rawLow, "220v") || strings.Contains(rawLow, "360w") ||
+		strings.Contains(rawLow, "watt") || strings.Contains(rawLow, "volt") || strings.Contains(rawLow, "minutes") ||
+		strings.Contains(rawLow, "menit") || strings.Contains(rawLow, "jam") || strings.Contains(rawLow, "quality") ||
+		strings.Contains(rawLow, "weight") || strings.Contains(rawLow, "hz") || strings.Contains(rawLow, "vac") ||
+		strings.Contains(rawLow, "vdc") || strings.Contains(rawLow, "ampere") || strings.Contains(rawLow, "bar") ||
+		strings.Contains(rawLow, "psi") || strings.Contains(rawLow, "kpa") || strings.Contains(rawLow, "mpa") ||
+		strings.Contains(rawLow, "ip66") || strings.Contains(rawLow, "ip67") || strings.Contains(rawLow, "ip68") ||
+		strings.Contains(rawLow, "carrier board") || strings.Contains(rawLow, "storage") || strings.Contains(rawLow, "psu") {
+		return 0, currency
+	}
+
+	// Filter engineering rating values like "24V to 12V / 5V" or "50Hz" or "500mA"
+	specRatingRegex := regexp.MustCompile(`(?i)\b\d+\s*(v|w|a|va|kv|kw|ma|rpm|fps|kbps|mbps)\b`)
+	if specRatingRegex.MatchString(cleaned) && !strings.Contains(strings.ToUpper(cleaned), "RP") && !strings.Contains(cleaned, "$") {
 		return 0, currency
 	}
 
@@ -471,6 +500,11 @@ func (n *ImportNormalizerService) parseCurrencyAmount(raw string) (float64, stri
 
 	val, err := strconv.ParseFloat(numericStr, 64)
 	if err != nil {
+		return 0, currency
+	}
+
+	// Reject unreasonable runaway numbers from concatenated text numbers (e.g. 400504080045) unless explicitly marked with currency symbols
+	if val > 99999999999 && !strings.Contains(strings.ToUpper(raw), "RP") && !strings.Contains(raw, "$") && !strings.Contains(strings.ToUpper(raw), "USD") && !strings.Contains(strings.ToUpper(raw), "EUR") {
 		return 0, currency
 	}
 
