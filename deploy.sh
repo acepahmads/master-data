@@ -41,12 +41,12 @@ mkdir -p dist
 
 # 4. Restart Backend Service / Process
 echo -e "\n${YELLOW}[4/4] Restarting Application Service...${NC}"
-if systemctl is-active --quiet iot-backend; then
-    sudo systemctl restart iot-backend
-    echo -e "${GREEN}✓ Systemd service 'iot-backend' successfully restarted.${NC}"
+if systemctl is-active --quiet master-data; then
+    sudo systemctl restart master-data
+    echo -e "${GREEN}✓ Systemd service 'master-data' successfully restarted.${NC}"
 else
-    echo -e "${YELLOW}! Systemd service 'iot-backend' is not currently active.${NC}"
-    echo -e "  If using systemd, run: sudo systemctl start iot-backend"
+    echo -e "${YELLOW}! Systemd service 'master-data' is not currently active.${NC}"
+    echo -e "  If using systemd, run: sudo systemctl start master-data"
     echo -e "  Or run binary manually: cd backend && ./server"
 fi
 
