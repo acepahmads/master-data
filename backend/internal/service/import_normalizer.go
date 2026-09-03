@@ -35,7 +35,7 @@ func (n *ImportNormalizerService) AutoDetectMapping(headers []string, samplesMap
 		}
 
 		// 1. Selling Price / Cost check by Header or Samples
-		if strings.Contains(lower, "biaya") || strings.Contains(lower, "harga jual") || strings.Contains(lower, "selling") || strings.Contains(lower, "msrp") || strings.Contains(lower, "retail") || strings.Contains(lower, "pricelist") {
+		if strings.Contains(lower, "biaya") || strings.Contains(lower, "harga jual") || strings.Contains(lower, "selling") || strings.Contains(lower, "msrp") || strings.Contains(lower, "retail") || strings.Contains(lower, "pricelist") || strings.Contains(lower, "price / unit") || strings.Contains(lower, "price/unit") || strings.Contains(lower, "unit price") || strings.Contains(lower, "harga satuan") {
 			if !mappedFields["selling_price"] {
 				mapping[h] = "selling_price"
 				mappedFields["selling_price"] = true
@@ -67,7 +67,7 @@ func (n *ImportNormalizerService) AutoDetectMapping(headers []string, samplesMap
 		}
 
 		// 2. Unit of Measure (UoM)
-		if strings.Contains(lower, "satuan") || lower == "sat" || strings.Contains(lower, "unit") || strings.Contains(lower, "uom") {
+		if (strings.Contains(lower, "satuan") || lower == "sat" || strings.Contains(lower, "unit") || strings.Contains(lower, "uom")) && !strings.Contains(lower, "price") && !strings.Contains(lower, "harga") && !strings.Contains(lower, "cost") {
 			if !mappedFields["unit"] {
 				mapping[h] = "unit"
 				mappedFields["unit"] = true

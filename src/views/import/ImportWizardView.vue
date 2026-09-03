@@ -215,6 +215,7 @@
 
         <ColumnMappingGrid
           :headers="detectedHeadersList"
+          :fileGroups="mappingFileGroups"
           :initialMapping="currentMapping"
           :columnSamples="columnSamplesMap"
           @change="updateMapping"
@@ -434,6 +435,44 @@ export default {
         }
       }
       return map;
+    },
+    mappingFileGroups() {
+      const groups = [];
+      for (const f of this.batch?.files || []) {
+        const manifest = this.parseManifest(f.sheetManifestJson);
+        const selectedSheets = manifest.filter(m => this.isSheetSelected(f.id, m.name));
+        if (selectedSheets.length === 0) continue;
+
+        const fileHeaders = [];
+        const fileSamples = {};
+        for (const s of selectedSheets) {
+          for (const h of s.headers || []) {
+            const hTrim = h ? h.trim() : '';
+            if (hTrim && !fileHeaders.includes(hTrim)) {
+              fileHeaders.push(hTrim);
+            }
+          }
+          if (s.columnSamples) {
+            for (const [col, samples] of Object.entries(s.columnSamples)) {
+              if (!fileSamples[col]) fileSamples[col] = [];
+              for (const val of samples) {
+                if (val && !fileSamples[col].includes(val)) {
+                  fileSamples[col].push(val);
+                }
+              }
+            }
+          }
+        }
+
+        groups.push({
+          fileId: f.id,
+          fileName: f.originalFileName,
+          sheets: selectedSheets.map(s => s.name).join(', '),
+          headers: fileHeaders,
+          samples: fileSamples
+        });
+      }
+      return groups;
     }
   },
   async mounted() {

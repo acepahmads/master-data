@@ -224,8 +224,7 @@ func (s *ImportService) ParseBatch(batchID string, selectedSheetsByFile map[stri
 	}
 
 	var allStagedRows []model.ImportStagedRow
-	var detectedHeaders []string
-	samplesMap := make(map[string][]string)
+	autoMapping := make(map[string]string)
 
 	for _, file := range files {
 		selectedSheets := selectedSheetsByFile[file.ID]
@@ -235,24 +234,42 @@ func (s *ImportService) ParseBatch(batchID string, selectedSheetsByFile map[stri
 		}
 		allStagedRows = append(allStagedRows, rows...)
 
-		// Collect headers and column samples for auto-mapping
+		// Collect headers and column samples for auto-mapping per file from selected sheets
+		selectedSheetMap := make(map[string]bool)
+		for _, s := range selectedSheets {
+			selectedSheetMap[strings.ToLower(strings.TrimSpace(s))] = true
+		}
+
+		var fileHeaders []string
+		fileSamples := make(map[string][]string)
+
 		var manifest []SheetInfo
 		if err := json.Unmarshal([]byte(file.SheetManifestJSON), &manifest); err == nil {
 			for _, m := range manifest {
-				detectedHeaders = append(detectedHeaders, m.Headers...)
+				// Only inspect headers from selected sheets
+				if len(selectedSheetMap) > 0 && !selectedSheetMap[strings.ToLower(strings.TrimSpace(m.Name))] {
+					continue
+				}
+				fileHeaders = append(fileHeaders, m.Headers...)
 				if m.ColumnSamples != nil {
 					for k, v := range m.ColumnSamples {
-						if samplesMap[k] == nil {
-							samplesMap[k] = v
+						if fileSamples[k] == nil {
+							fileSamples[k] = v
 						}
 					}
 				}
 			}
 		}
+
+		// Run AutoDetectMapping for this file's headers and samples
+		fileMapping := s.normalizer.AutoDetectMapping(fileHeaders, fileSamples)
+		for k, v := range fileMapping {
+			if v != "IGNORE" || autoMapping[k] == "" {
+				autoMapping[k] = v
+			}
+		}
 	}
 
-	// Auto-detect initial column mapping with semantic samples
-	autoMapping := s.normalizer.AutoDetectMapping(detectedHeaders, samplesMap)
 	mapJSON, _ := json.Marshal(autoMapping)
 	batch.ColumnMappingJSON = string(mapJSON)
 	batch.Status = model.BatchStatusParsed
