@@ -106,43 +106,7 @@
             </div>
           </div>
 
-          <!-- CARD 3: PROJECT PRODUCT -->
-          <div
-            @click="setProductType('PROJECT')"
-            :class="[
-              'p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between select-none relative overflow-hidden',
-              form.productType === 'PROJECT'
-                ? 'border-cyan-500 bg-cyan-50/40 shadow-xs'
-                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
-            ]"
-          >
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <div class="w-8 h-8 rounded-lg bg-cyan-100/80 text-cyan-700 flex items-center justify-center font-bold">
-                  <AppIcon name="layers" size="xs" />
-                </div>
-                <span v-if="form.productType === 'PROJECT'" class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
-              </div>
-              <h3 class="font-bold text-xs text-slate-900">PROJECT PRODUCT</h3>
-              <p class="text-3xs text-slate-500 mt-1 leading-relaxed">
-                Turnkey solution package composed of multiple products, sub-assemblies, and components.
-              </p>
-            </div>
-
-            <div class="pt-3 mt-3 border-t border-slate-200/80 space-y-1 text-3xs">
-              <div class="text-cyan-700 font-medium flex items-center gap-1">
-                <span>✓</span> <span>System Architecture Tree</span>
-              </div>
-              <div class="text-cyan-700 font-medium flex items-center gap-1">
-                <span>✓</span> <span>References Trading & Manufacture</span>
-              </div>
-              <div class="text-slate-400 flex items-center gap-1">
-                <span>✕</span> <span>No Internal Manufacture BOM Duplication</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- CARD 4: SERVICE PRODUCT -->
+          <!-- CARD 3: SERVICE PRODUCT -->
           <div
             @click="setProductType('SERVICE')"
             :class="[
@@ -174,6 +138,70 @@
               </div>
               <div class="text-slate-400 flex items-center gap-1">
                 <span>✕</span> <span>No Internal BOM Duplication</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 4: PROJECT (Paling Kanan - Disabled / Indicator Only) -->
+          <div
+            :class="[
+              'p-4 rounded-xl border-2 transition-all flex flex-col justify-between select-none relative overflow-hidden',
+              form.productType === 'PROJECT'
+                ? 'border-cyan-500 bg-cyan-50/40 shadow-xs cursor-default'
+                : 'border-slate-200 bg-slate-50/70 opacity-60 cursor-not-allowed'
+            ]"
+            :title="form.productType === 'PROJECT' ? 'Project Classification (Indicator Only)' : 'Tipe Project tidak dapat dipilih saat pembuatan produk baru'"
+          >
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <div
+                  :class="[
+                    'w-8 h-8 rounded-lg flex items-center justify-center font-bold',
+                    form.productType === 'PROJECT'
+                      ? 'bg-cyan-100/80 text-cyan-700'
+                      : 'bg-slate-200/70 text-slate-400'
+                  ]"
+                >
+                  <AppIcon name="layers" size="xs" />
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span
+                    v-if="form.productType === 'PROJECT'"
+                    class="text-4xs font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-800 border border-cyan-200"
+                  >
+                    Indicator
+                  </span>
+                  <span
+                    v-else
+                    class="text-4xs font-mono font-medium px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-500"
+                  >
+                    Disabled
+                  </span>
+                  <span v-if="form.productType === 'PROJECT'" class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+                </div>
+              </div>
+              <h3
+                :class="[
+                  'font-bold text-xs',
+                  form.productType === 'PROJECT' ? 'text-slate-900' : 'text-slate-600'
+                ]"
+              >
+                PROJECT
+              </h3>
+              <p class="text-3xs text-slate-500 mt-1 leading-relaxed">
+                Turnkey solution package composed of multiple products, sub-assemblies, and components.
+              </p>
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-slate-200/80 space-y-1 text-3xs">
+              <div :class="form.productType === 'PROJECT' ? 'text-cyan-700 font-medium' : 'text-slate-400'" class="flex items-center gap-1">
+                <span>✓</span> <span>System Architecture Tree</span>
+              </div>
+              <div :class="form.productType === 'PROJECT' ? 'text-cyan-700 font-medium' : 'text-slate-400'" class="flex items-center gap-1">
+                <span>✓</span> <span>References Trading & Manufacture</span>
+              </div>
+              <div class="text-slate-400 flex items-center gap-1">
+                <span>✕</span> <span>No Internal Manufacture BOM Duplication</span>
               </div>
             </div>
           </div>
@@ -1369,6 +1397,7 @@ export default {
       return role;
     },
     setProductType(type) {
+      if (type === 'PROJECT') return;
       this.form.productType = type;
       if (!this.isEdit && !this.form.code) {
         this.generateProductCode();
