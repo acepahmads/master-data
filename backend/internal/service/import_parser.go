@@ -770,10 +770,22 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 						break
 					}
 				}
-			} else if descVal == "" || descVal == "-" {
+			}
+			// Bidirectional Fallback: If descVal is still empty or a bullet, search all table text columns (including columns to the left)
+			if descVal == "" || descVal == "-" || bulletRegex.MatchString(descVal) {
 				for cIdx, v := range rowValues {
+					if cIdx == noColIdx || cIdx == volColIdx || cIdx == satColIdx || cIdx == biayaColIdx || cIdx == totalColIdx || cIdx >= len(headers) {
+						continue
+					}
 					vTrim := strings.TrimSpace(v)
-					if cIdx != noColIdx && len(vTrim) > 2 && !numericDataRegex.MatchString(vTrim) && !strings.EqualFold(vTrim, noVal) {
+					if len(vTrim) > 1 && !numericDataRegex.MatchString(vTrim) && !strings.EqualFold(vTrim, noVal) &&
+						!strings.HasPrefix(vTrim, "●") && !strings.HasPrefix(vTrim, "•") && vTrim != ":" && vTrim != "-" {
+						if bulletRegex.MatchString(vTrim) {
+							if noVal == "" {
+								noVal = vTrim
+							}
+							continue
+						}
 						descVal = vTrim
 						break
 					}
@@ -793,6 +805,13 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 				for cIdx, v := range rowValues {
 					if cIdx == noColIdx || cIdx == descColIdx || cIdx == volColIdx || cIdx == satColIdx || cIdx >= len(headers) {
 						continue // NEVER scan description, no, vol, or side calculations as prices!
+					}
+					// STRICT: Only scan columns whose header explicitly indicates pricing semantics
+					if cIdx < len(headers) {
+						hLow := strings.ToLower(headers[cIdx])
+						if !strings.Contains(hLow, "harga") && !strings.Contains(hLow, "price") && !strings.Contains(hLow, "biaya") && !strings.Contains(hLow, "cost") && !strings.Contains(hLow, "tarif") && !strings.Contains(hLow, "amount") && !strings.Contains(hLow, "total") {
+							continue
+						}
 					}
 					vTrim := strings.TrimSpace(v)
 					if vTrim != "" && vTrim != "-" && vTrim != "0" {
@@ -827,7 +846,7 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 				}
 			}
 
-			// Skip summary, calculation, and tax rows (e.g. Total, PPN, Grand Total, Subtotal, Diskon)
+			// Skip summary, calculation, and tax rows (e.g. Total, PPN, Grand Total, Subtotal, Diskon, Notes)
 			descLow := strings.ToLower(strings.TrimSpace(descVal))
 			noLow := strings.ToLower(strings.TrimSpace(noVal))
 			combinedLow := strings.ToLower(strings.TrimSpace(noVal + " " + descVal))
@@ -839,7 +858,8 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 				strings.HasPrefix(descLow, "grand total") || strings.HasPrefix(descLow, "total biaya") ||
 				strings.HasPrefix(descLow, "sub total") || strings.HasPrefix(descLow, "subtotal") ||
 				strings.HasPrefix(combinedLow, "total ") || strings.HasPrefix(combinedLow, "ppn ") ||
-				strings.HasPrefix(combinedLow, "grand total") || noLow == "total" || noLow == "ppn" || noLow == "grand total" {
+				strings.HasPrefix(combinedLow, "grand total") || noLow == "total" || noLow == "ppn" || noLow == "grand total" ||
+				strings.HasPrefix(descLow, "note") || strings.HasPrefix(noLow, "note") || strings.HasPrefix(combinedLow, "note") {
 				continue
 			}
 
@@ -891,7 +911,17 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 			noTrim = strings.TrimSpace(noVal)
 			isNumberedPoint := (digitOnlyRegex.MatchString(noTrim) && len(noTrim) <= 4) || (len(noTrim) > 0 && numberPrefixRegex.MatchString(noTrim))
 
-			if !hasPrice && !hasVolAndSat && !isSectionHeader && !isNumberedPoint {
+			isSpecBullet := strings.HasPrefix(descVal, "●") || strings.HasPrefix(descVal, "•") ||
+				descLow == "features" || descLow == "generalspecifications" || descLow == "parameters" ||
+				descLow == "principle" || descLow == "measurement range" || descLow == "accuracy" ||
+				descLow == "ipclass" || descLow == "dimensions(hxφ)" || descLow == "weight" || descLow == "power" ||
+				descLow == "digital outputs(rs-485)" || descLow == "operating voltage" || descLow == "operating temperature" ||
+				descLow == "operating humidity" || descLow == "connector" || descLow == "cable" ||
+				descLow == "print speed" || descLow == "print capacity" || descLow == "input capacity" || descLow == "interface" ||
+				descLow == "display type" || descLow == "pixel pitch" || descLow == "led type" || descLow == "brightness" ||
+				descLow == "cabinet diecase" || descLow == "refresh rate" || descLow == "resolution" || descLow == "module dimension" || descLow == "hub 75"
+
+			if !hasPrice && !hasVolAndSat && !isSectionHeader && (isSpecBullet || !isNumberedPoint) {
 				var rowTextParts []string
 				if noTrim != "" && noTrim != "-" {
 					if len(noTrim) == 1 && noTrim >= "a" && noTrim <= "z" {
