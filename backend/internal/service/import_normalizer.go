@@ -358,6 +358,29 @@ func (n *ImportNormalizerService) NormalizeStagedRow(row *model.ImportStagedRow,
 		row.Currency = "IDR"
 	}
 
+	// Defensive clamping to prevent MySQL Data Too Long errors
+	if len(row.NormalizedName) > 255 {
+		row.NormalizedName = row.NormalizedName[:252] + "..."
+	}
+	if len(row.NormalizedCode) > 64 {
+		row.NormalizedCode = row.NormalizedCode[:64]
+	}
+	if len(row.NormalizedCategory) > 128 {
+		row.NormalizedCategory = row.NormalizedCategory[:125] + "..."
+	}
+	if len(row.NormalizedMfg) > 128 {
+		row.NormalizedMfg = row.NormalizedMfg[:128]
+	}
+	if len(row.NormalizedSupplier) > 128 {
+		row.NormalizedSupplier = row.NormalizedSupplier[:128]
+	}
+	if len(row.NormalizedUnit) > 32 {
+		row.NormalizedUnit = row.NormalizedUnit[:32]
+	}
+	if len(row.TargetMarket) > 255 {
+		row.TargetMarket = row.TargetMarket[:255]
+	}
+
 	normJSON, _ := json.Marshal(normMap)
 	row.NormalizedDataJSON = string(normJSON)
 
@@ -409,6 +432,11 @@ func (n *ImportNormalizerService) parseCurrencyAmount(raw string) (float64, stri
 	currency := "IDR"
 	cleaned := strings.TrimSpace(raw)
 	if cleaned == "" || cleaned == "-" || cleaned == "0" {
+		return 0, currency
+	}
+
+	// Ignore common spreadsheet error values (#REF!, #VALUE!, #N/A, #DIV/0!, #NAME?)
+	if strings.Contains(cleaned, "#REF!") || strings.Contains(cleaned, "#VALUE!") || strings.Contains(cleaned, "#N/A") || strings.Contains(cleaned, "#DIV/0!") || strings.Contains(cleaned, "#NAME?") {
 		return 0, currency
 	}
 

@@ -347,7 +347,24 @@ func (p *ImportParserService) InspectWorkbook(filePath string) ([]SheetInfo, err
 			continue
 		}
 
-		rowCount := len(rows)
+		effectiveRowCount := 0
+		for _, r := range rows {
+			hasCell := false
+			for _, cell := range r {
+				if strings.TrimSpace(cell) != "" {
+					hasCell = true
+					break
+				}
+			}
+			if hasCell {
+				effectiveRowCount++
+			}
+		}
+		if effectiveRowCount == 0 {
+			effectiveRowCount = len(rows)
+		}
+
+		rowCount := effectiveRowCount
 		headerRowIdx, headers := findHeaderRow(rows, 0)
 		colCount := len(headers)
 
@@ -693,6 +710,7 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 
 		currentCategory := ""
 		currentParentIdx := -1
+		preambleNotes := ""
 
 		// Iterate data rows starting AFTER the detected header row
 		for rIdx := headerRowIdx + 1; rIdx < len(rows); rIdx++ {
@@ -908,11 +926,20 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 				subLine = strings.ReplaceAll(subLine, " :", ": ")
 				subLine = strings.TrimSpace(subLine)
 
-				if subLine != "" && currentParentIdx >= 0 && currentParentIdx < len(stagedRows) {
-					if stagedRows[currentParentIdx].Description == "" {
-						stagedRows[currentParentIdx].Description = subLine
+				if subLine != "" {
+					if currentParentIdx >= 0 && currentParentIdx < len(stagedRows) {
+						if stagedRows[currentParentIdx].Description == "" {
+							stagedRows[currentParentIdx].Description = subLine
+						} else {
+							stagedRows[currentParentIdx].Description += "\n" + subLine
+						}
 					} else {
-						stagedRows[currentParentIdx].Description += "\n" + subLine
+						// Preamble narrative text before any product row (e.g. Scope / AQMS introduction)
+						if preambleNotes != "" {
+							preambleNotes += "\n\n" + subLine
+						} else {
+							preambleNotes = subLine
+						}
 					}
 					// Skip creating an empty redundant staged row
 					continue
@@ -931,6 +958,21 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 						displayName = fmt.Sprintf("%s. %s", noTrim, descVal)
 					}
 				}
+			}
+
+			// Defensive clamping & truncation for database integrity:
+			// If displayName is excessively long (e.g. narrative paragraph > 255 chars),
+			// preserve full text in description and clamp displayName to 252 + "..."
+			var rowDescription string
+			if len(displayName) > 255 {
+				rowDescription = displayName
+				displayName = displayName[:252] + "..."
+			}
+
+			// Also clamp category to database size limit (128 chars)
+			safeCategory := currentCategory
+			if len(safeCategory) > 128 {
+				safeCategory = safeCategory[:125] + "..."
 			}
 
 			normHelper := NewImportNormalizerService()
@@ -994,6 +1036,11 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 
 			rawJSON, _ := json.Marshal(rawMap)
 
+			if preambleNotes != "" && rowDescription == "" {
+				rowDescription = preambleNotes
+				preambleNotes = "" // consumed by primary product item
+			}
+
 			stagedRow := model.ImportStagedRow{
 				ID:                 uuid.New().String(),
 				BatchID:            batchID,
@@ -1002,8 +1049,8 @@ func (p *ImportParserService) ParseSheetRows(batchID string, file *model.ImportF
 				SheetName:          sheetName,
 				RowNumber:          rIdx + 1, // Excel 1-based row number
 				NormalizedName:     displayName,
-				NormalizedCategory: currentCategory,
-				Description:        "",
+				NormalizedCategory: safeCategory,
+				Description:        rowDescription,
 				SellingPrice:       parsedPrice,
 				UnitCost:           0, // Strictly 0: Imported quotes represent Selling Prices to customers, not vendor costs!
 				RawDataJSON:        string(rawJSON),

@@ -120,7 +120,10 @@ func (h *ImportHandler) ParseBatch(c *gin.Context) {
 
 	batch, err := h.importService.ParseBatch(id, req.SelectedSheetsByFile, req.HeaderRowOverrides)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse batch workbooks: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to parse batch workbooks: " + err.Error(),
+			"error":   "Failed to parse batch workbooks: " + err.Error(),
+		})
 		return
 	}
 

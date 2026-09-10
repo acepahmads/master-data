@@ -30,8 +30,8 @@ apiClient.interceptors.response.use(
   (error) => {
     const status = error.response ? error.response.status : null;
     const message =
-      error.response && error.response.data && error.response.data.message
-        ? error.response.data.message
+      error.response && error.response.data && (error.response.data.message || error.response.data.error)
+        ? (error.response.data.message || error.response.data.error)
         : error.message || 'An unexpected network error occurred';
 
     if (status === 401) {
