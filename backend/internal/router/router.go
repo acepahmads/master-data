@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"iot-rd-backend/internal/config"
 	"iot-rd-backend/internal/handler"
@@ -63,7 +64,8 @@ func SetupRouter(deps *RouterDependencies) *gin.Engine {
 		// Public Auth
 		auth := api.Group("/auth")
 		{
-			auth.POST("/login", deps.AuthHandler.Login)
+			// Anti-Brute Force Protection: Max 5 login attempts per minute per IP address
+			auth.POST("/login", middleware.RateLimit(5, time.Minute, "Too many login attempts. Please wait 1 minute before trying again."), deps.AuthHandler.Login)
 		}
 
 		// Protected Routes

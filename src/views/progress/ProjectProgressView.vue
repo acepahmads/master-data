@@ -240,6 +240,138 @@
     </div>
 
     <!-- ================================================================= -->
+    <!-- SECTION A.2: APPLICATION SECURITY ARCHITECTURE & AUDIT (Active vs Roadmap) -->
+    <!-- ================================================================= -->
+    <div class="space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-2.5 gap-2">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <AppIcon name="shield" size="sm" class="text-emerald-600" />
+            <span>APPLICATION SECURITY ARCHITECTURE & AUDIT</span>
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Comprehensive defense-in-depth posture: Active Security Controls vs. Planned Hardening Roadmap.</p>
+        </div>
+        <div class="flex items-center gap-2 text-3xs font-mono font-bold">
+          <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>{{ secArch.activeDefenses.length }} Active Defenses</span>
+          </span>
+          <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span>{{ secArch.plannedRoadmap.length }} Roadmap Goals</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Security Grid: 2 Large Columns (Active vs Roadmap) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Column 1: Active Defenses (Sudah Ada) -->
+        <div class="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl p-5 border border-emerald-200/90 shadow-2xs space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-emerald-100">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                <AppIcon name="check" size="xs" />
+              </div>
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-950">Active Security Controls (Sudah Ada)</h3>
+                <span class="text-3xs text-emerald-700 font-medium">Production-grade verified defense layers currently live in the codebase</span>
+              </div>
+            </div>
+            <span class="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+              100% OPERATIONAL
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <div
+              v-for="sec in secArch.activeDefenses"
+              :key="sec.id"
+              class="p-3.5 rounded-xl bg-white border border-emerald-100/90 shadow-2xs hover:border-emerald-300 transition-all space-y-2"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200/60">
+                    <AppIcon :name="sec.icon" size="2xs" />
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-900 leading-tight">{{ sec.title }}</h4>
+                    <span class="text-3xs font-mono text-emerald-700 font-semibold">{{ sec.category }}</span>
+                  </div>
+                </div>
+                <span class="text-3xs font-mono font-bold px-2 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 flex items-center gap-1">
+                  <span>✓</span>
+                  <span>Active</span>
+                </span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">{{ sec.description }}</p>
+              <div class="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                <span
+                  v-for="(hl, idx) in sec.highlights"
+                  :key="idx"
+                  class="text-3xs font-mono px-2 py-0.5 rounded bg-slate-50 text-slate-600 border border-slate-200/80"
+                >
+                  {{ hl }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 2: Planned Roadmap (Belum Ada) -->
+        <div class="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl p-5 border border-amber-200/90 shadow-2xs space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-amber-100">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                <AppIcon name="shield" size="xs" />
+              </div>
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-amber-950">Security Hardening Roadmap (Belum Ada)</h3>
+                <span class="text-3xs text-amber-700 font-medium">Planned security enhancements for banking-grade infrastructure compliance</span>
+              </div>
+            </div>
+            <span class="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+              NEXT HARDENING
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <div
+              v-for="sec in secArch.plannedRoadmap"
+              :key="sec.id"
+              class="p-3.5 rounded-xl bg-white border border-amber-100/90 shadow-2xs hover:border-amber-300 transition-all space-y-2"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200/60">
+                    <AppIcon :name="sec.icon" size="2xs" />
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-900 leading-tight">{{ sec.title }}</h4>
+                    <span class="text-3xs font-mono text-amber-700 font-semibold">{{ sec.category }}</span>
+                  </div>
+                </div>
+                <span class="text-3xs font-mono font-bold px-2 py-0.2 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0 flex items-center gap-1">
+                  <span>⏳</span>
+                  <span>Roadmap</span>
+                </span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">{{ sec.description }}</p>
+              <div class="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                <span
+                  v-for="(hl, idx) in sec.highlights"
+                  :key="idx"
+                  class="text-3xs font-mono px-2 py-0.5 rounded bg-slate-50 text-slate-600 border border-slate-200/80"
+                >
+                  {{ hl }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
     <!-- SECTION B & C: PRODUCT MASTER & 3-TIER ARCHITECTURE (Layer 2) -->
     <!-- ================================================================= -->
     <div class="space-y-4">
@@ -599,7 +731,8 @@ import {
   systemArchitecturePipeline,
   developmentMilestones,
   moduleStatusMatrix,
-  calculateProgressStats
+  calculateProgressStats,
+  securityArchitecture
 } from '@/config/projectProgress';
 import AppIcon from '@/components/common/AppIcon.vue';
 
@@ -617,6 +750,7 @@ export default {
       pipeline: systemArchitecturePipeline,
       milestones: developmentMilestones,
       matrix: moduleStatusMatrix,
+      secArch: securityArchitecture,
       stats: calculateProgressStats()
     };
   },

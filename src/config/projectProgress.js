@@ -88,15 +88,15 @@ export const platformFoundation = [
   },
   {
     id: "PF-06",
-    title: "Authentication & Session Security",
+    title: "Authentication & Security Foundation",
     code: "PLT-SEC",
     scope: "Cross-Cutting Security Capability",
     status: "Complete",
     progress: 100,
     color: "indigo",
     icon: "lock",
-    description: "Enterprise authentication portal with real JWT tokens, Bcrypt password hashing, session guards, and 401 interceptors.",
-    highlights: ["Enterprise Login Portal", "Real JWT Bearer Tokens", "Vue Router Session Guard", "Axios 401 Auto-Redirect"]
+    description: "Enterprise security architecture with JWT & static API tokens, in-memory rate limiting, upload magic-bytes sniffing, Bcrypt, and RBAC.",
+    highlights: ["JWT & Static API Tokens", "Rate Limit (Anti-Brute Force)", "Upload Magic Bytes Sniffing", "Granular RBAC (32 Perms)"]
   },
   {
     id: "PF-07",
@@ -533,3 +533,134 @@ export function calculateProgressStats() {
     nextMilestonePhase
   };
 }
+
+/**
+ * APPLICATION SECURITY ARCHITECTURE (Active vs Roadmap)
+ * Comprehensive audit of implemented defenses and planned hardening roadmap.
+ */
+export const securityArchitecture = {
+  activeDefenses: [
+    {
+      id: "SEC-01",
+      title: "Rate Limiting & Anti-Brute Force",
+      status: "Active",
+      category: "Endpoint & API Protection",
+      description: "In-memory sliding window rate limiter strictly capping /auth/login to max 5 attempts/minute per IP with automatic memory cleanup, HTTP 429 status, and Retry-After header.",
+      icon: "shield",
+      color: "emerald",
+      highlights: ["Max 5 req/min per IP", "Automatic Memory Cleanup", "HTTP 429 Status", "RFC Retry-After Header"]
+    },
+    {
+      id: "SEC-02",
+      title: "Upload Whitelist & Magic Bytes Sniffing",
+      status: "Active",
+      category: "File & Storage Security",
+      description: "Multi-layered file upload guard verifying approved R&D extensions (images/documents), 25MB size limit, and binary magic bytes inspection rejecting disguised executables.",
+      icon: "upload",
+      color: "emerald",
+      highlights: ["R&D Extension Whitelist", "512-Byte Content Sniffing", "Anti-Executable Camouflage", "25MB Size Limit"]
+    },
+    {
+      id: "SEC-03",
+      title: "Dual Authentication (JWT & Static API Tokens)",
+      status: "Active",
+      category: "Identity & Access",
+      description: "HMAC-SHA256 JWT Bearer tokens for interactive sessions plus cryptographically secure SHA-256 hashed static API tokens with masked preview for M2M integrations.",
+      icon: "lock",
+      color: "emerald",
+      highlights: ["HMAC-SHA256 Signatures", "SHA-256 Token Hashing", "Zero Plaintext DB Storage", "Configurable Expiry"]
+    },
+    {
+      id: "SEC-04",
+      title: "Bcrypt Password Encryption",
+      status: "Active",
+      category: "Credential Protection",
+      description: "High-work-factor Bcrypt password hashing with automatic salt generation and strict JSON exclusion (json:\"-\") preventing credential exposure in responses.",
+      icon: "lock",
+      color: "emerald",
+      highlights: ["Bcrypt Default Cost", "Auto Salt Generation", "Zero Plaintext Passwords", "JSON Tag Stripping"]
+    },
+    {
+      id: "SEC-05",
+      title: "Granular RBAC Permission Matrix",
+      status: "Active",
+      category: "Authorization Engine",
+      description: "Multi-tier role-based access control with 32 granular permission codes enforced via Go backend middleware (RequirePermission) and Vue navigation route guards.",
+      icon: "roles",
+      color: "emerald",
+      highlights: ["32 Granular Permissions", "Backend Middleware Guard", "Client Route Protection", "Super Admin Bypass"]
+    },
+    {
+      id: "SEC-06",
+      title: "SQL Injection Prevention & Soft Deletes",
+      status: "Active",
+      category: "Data Integrity & Audit",
+      description: "100% parameterized queries across all repositories via GORM ORM, combined with gorm.DeletedAt soft deletes to preserve audit and forensic histories.",
+      icon: "database",
+      color: "emerald",
+      highlights: ["100% Parameterized SQL", "Zero Raw Concatenation", "gorm.DeletedAt Soft Delete", "Forensic Data History"]
+    },
+    {
+      id: "SEC-07",
+      title: "Activity Audit Logging Trail",
+      status: "Active",
+      category: "Compliance & Auditing",
+      description: "Automated persistent logging of critical master data actions (creation, revisions, token issuance, status changes) with user identities and timestamps.",
+      icon: "activity",
+      color: "emerald",
+      highlights: ["Audit Log Persistence", "Actor & Action Tracking", "Entity State Changes", "Realtime Admin Timeline"]
+    }
+  ],
+  plannedRoadmap: [
+    {
+      id: "SEC-ROAD-01",
+      title: "Functional 2FA / TOTP Authenticator",
+      status: "Roadmap",
+      category: "Multi-Factor Authentication",
+      description: "Integration of Time-based One-Time Password (TOTP) authenticator apps (Google / Microsoft Authenticator) with QR code onboarding and 6-digit login challenge.",
+      icon: "lock",
+      color: "amber",
+      highlights: ["RFC 6238 TOTP Standard", "Google Authenticator QR", "Backup Recovery Codes", "Mandatory Admin MFA"]
+    },
+    {
+      id: "SEC-ROAD-02",
+      title: "HTTP Security Headers (CSP & HSTS)",
+      status: "Roadmap",
+      category: "Browser Defense",
+      description: "Injection of browser security headers: Content Security Policy (CSP), X-Frame-Options (anti-clickjacking), X-Content-Type-Options (nosniff), and HSTS.",
+      icon: "shield",
+      color: "amber",
+      highlights: ["Content Security Policy", "Anti-Clickjacking Headers", "X-Content-Type-Options", "Strict Transport Security"]
+    },
+    {
+      id: "SEC-ROAD-03",
+      title: "Production CORS Domain Whitelisting",
+      status: "Roadmap",
+      category: "Network Isolation",
+      description: "Transitioning Access-Control-Allow-Origin from development wildcard (*) to an environment-configured strict domain whitelist for production deployments.",
+      icon: "server",
+      color: "amber",
+      highlights: ["Strict Origin Whitelist", "Credentials Isolation", "Preflight Verification", "Production Hardening"]
+    },
+    {
+      id: "SEC-ROAD-04",
+      title: "Account Lockout & Password Complexity Policy",
+      status: "Roadmap",
+      category: "Account Protection",
+      description: "Automated temporary account suspension after 5 consecutive failed login attempts, paired with enforced password complexity rules (length, symbols, digits).",
+      icon: "users",
+      color: "amber",
+      highlights: ["5-Attempt Auto-Lockout", "15-Minute Cooldown", "Password Complexity Rule", "Breached Password Check"]
+    },
+    {
+      id: "SEC-ROAD-05",
+      title: "Global Request Body Size Limiter",
+      status: "Roadmap",
+      category: "Application DoS Defense",
+      description: "Centralized payload size limits across all standard JSON REST endpoints to protect server RAM from oversized payload exhaustion attacks.",
+      icon: "slider",
+      color: "amber",
+      highlights: ["Max JSON Payload Guard", "Memory Exhaustion Defense", "HTTP 413 Payload Too Large", "Per-Endpoint Overrides"]
+    }
+  ]
+};
